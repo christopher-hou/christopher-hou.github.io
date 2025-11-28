@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nation Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <header>
+            <h1>[NATION GAME]</h1>
+            <p class="subtitle">Conquer, Trade, and Dominate the World</p>
+        </header>
+
+        <div class="game-layout">
+            <!-- Sidebar for nation information -->
+            <aside class="sidebar">
+                <h2>Nation Info</h2>
+                <div class="nation-info">
+                    <div class="war-status-section">
+                        <h3>War Status</h3>
+                        <div id="war-status-list" class="war-status-list">
+                            <p class="no-war">No wars declared</p>
+                        </div>
+                    </div>
+                    <div class="stat-row">
+                        <label for="war-target">Target Nation:</label>
+                        <select id="war-target"></select>
+                    </div>
+                    <button id="declare-war-btn" class="war-btn tooltip">
+                        Declare War (5 PC)
+                        <span class="tooltiptext">Costs 5 Political Capital. War begins next turn. Winner takes all territory.</span>
+                    </button>
+                    <h3>Currently Viewing</h3>
+                    <div class="stat-row">
+                        <span class="stat-label">Nation:</span>
+                        <span class="stat-value" id="current-nation">Select a territory</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Territory Size:</span>
+                        <span class="stat-value" id="territory-size">0 cells</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Money:</span>
+                        <span class="stat-value" id="nation-money">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Political Capital:</span>
+                        <span class="stat-value" id="nation-pc">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Active Projects:</span>
+                        <span class="stat-value" id="projects-count">0/5</span>
+                    </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Army:</span>
+                            <span class="stat-value" id="army-count">0</span>
+                        </div>
+                        <button id="buy-army-btn" class="army-btn tooltip">
+                            Buy Army ($5)
+                            <span class="tooltiptext">Purchase army units to declare war. Higher army count wins battles.</span>
+                        </button>
+                        <button id="claim-tile-btn" class="claim-tile-btn tooltip" style="display: none;">
+                            Claim Tile ($2)
+                            <span class="tooltiptext">Claim this unclaimed tile. Requires $2 and at least 1 army unit. Tiles above 25 generate bonus resources.</span>
+                        </button>
+                    <div style="margin-top:10px;">
+                        <label for="nation-select">Switch Nation:</label>
+                        <select id="nation-select"></select>
+                    </div>
+                </div>
+
+                <!-- Active Projects Section -->
+                <div class="active-projects-section">
+                    <h3>Active Projects</h3>
+                    <div id="active-projects-list" class="active-projects-list">
+                        <p class="no-projects">No active projects</p>
+                    </div>
+                </div>
+                <!-- Diplomacy Panel -->
+                <div class="diplomacy-section">
+                    <h3>Diplomacy</h3>
+                    <div id="diplomacy-nation-list" class="diplomacy-nation-list">
+                        <!-- Populated by JS: list of other nations -->
+                    </div>
+                    <form id="trade-form" class="trade-form">
+                        <label for="trade-target">Trade with:</label>
+                        <select id="trade-target"></select>
+                        <div class="trade-row">
+                            <label>Offer:</label>
+                            <input type="number" id="offer-money" min="0" placeholder="Money">
+                            <input type="number" id="offer-pc" min="0" placeholder="Political Capital">
+                        </div>
+                        <div class="trade-row">
+                            <label>Request:</label>
+                            <input type="number" id="request-money" min="0" placeholder="Money">
+                            <input type="number" id="request-pc" min="0" placeholder="Political Capital">
+                        </div>
+                        <button type="button" id="trade-propose-btn" class="trade-btn">Propose Trade</button>
+                    </form>
+                    <div class="trade-log">
+                        <h4>Trade History</h4>
+                        <ul id="trade-history-list"></ul>
+                    </div>
+                </div>
+                
+                <!-- AI Action Log -->
+                <div class="ai-log-section">
+                    <h3>AI Activity Log</h3>
+                    <div id="ai-action-log" class="ai-action-log">
+                        <p class="no-ai-actions">No AI actions yet</p>
+                    </div>
+                </div>
+                
+                <!-- Draw Proposal Section -->
+                <div class="draw-proposal-section">
+                    <h3>Game Control</h3>
+                    <div id="draw-proposal-status" class="draw-proposal-status">
+                        <p class="no-draw">No active draw proposal</p>
+                    </div>
+                    <button id="propose-draw-btn" class="propose-draw-btn tooltip">
+                        Propose Draw
+                        <span class="tooltiptext">Request all nations to agree to end the game in a draw</span>
+                    </button>
+                    <button id="save-game-btn" class="save-game-btn tooltip">
+                        Save Game
+                        <span class="tooltiptext">Save current game state to browser storage</span>
+                    </button>
+                    <button id="load-game-btn" class="load-game-btn tooltip">
+                        Load Game
+                        <span class="tooltiptext">Load previously saved game from browser storage</span>
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Main game grid area -->
+            <main class="grid-container">
+                <div id="game-grid"></div>
+                    <!-- Turn and income display -->
+                    <div class="turn-income-panel">
+                        <div class="turn-row">
+                            <span class="turn-label">Turn:</span>
+                            <span class="turn-value" id="turn-number">1</span>
+                            <button id="ai-play-turn-btn" class="ai-play-turn-btn tooltip">
+                                AI Play Turn
+                                <span class="tooltiptext">Let AI make decisions for your nation this turn</span>
+                            </button>
+                            <button id="end-turn-btn" class="end-turn-btn tooltip">
+                                End Turn
+                                <span class="tooltiptext">End your turn and let all AI nations play</span>
+                            </button>
+                        </div>
+                        <div class="income-summary" id="income-summary">
+                            <span>Income: <span id="income-money">0</span> $, <span id="income-pc">0</span> PC</span>
+                        </div>
+                    </div>
+                
+                <!-- Legend showing all nations -->
+                <div class="legend">
+                    <h3>Nations</h3>
+                    <div class="legend-items" id="legend-items"></div>
+                </div>
+            </main>
+
+            <!-- Projects Panel -->
+            <aside class="projects-panel">
+                <h2>Available Projects <span id="available-projects-count"></span></h2>
+                <div class="projects-help">
+                    <p>Build projects to generate resources each turn. Maximum 5 projects per nation.</p>
+                </div>
+                <div id="available-projects-list" class="available-projects-list">
+                    <p class="no-projects">Select a nation to view projects</p>
+                </div>
+            </aside>
+        </div>
+    </div>
+    
+    <!-- Game Over Modal -->
+    <div id="game-over-modal" class="game-over-modal">
+        <div class="game-over-content">
+            <h1 id="game-over-title" class="game-over-title">GAME OVER</h1>
+            <p id="game-over-message" class="game-over-message"></p>
+            <div id="game-over-stats" class="game-over-stats"></div>
+            <button id="new-game-btn" class="new-game-btn">New Game</button>
+        </div>
+    </div>
+
+    <!-- War Declaration Modal -->
+    <div id="war-declaration-modal" class="war-declaration-modal">
+        <div class="war-declaration-content">
+            <h1 class="war-declaration-title">⚔️ WAR DECLARED!</h1>
+            <p id="war-declaration-message" class="war-declaration-message"></p>
+            <button id="war-declaration-ok-btn" class="war-declaration-ok-btn">Understood</button>
+        </div>
+    </div>
+
+    <!-- Processing Overlay -->
+    <div id="processing-overlay" class="processing-overlay">
+        <div class="processing-message">Processing Turn...</div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
