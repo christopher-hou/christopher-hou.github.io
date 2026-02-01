@@ -1,84 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" crossorigin="anonymous">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-        <link rel="stylesheet" href="css/main.css">
-        <link rel="stylesheet" href="css/nav-and-footer.css">
-        <title>Christopher Hou</title>
-    </head>
-    <header>
-        <div class="navbar navbar-default navbar-static-top">
-            <div class="container">
-                <div class="navbar-brand" style="color: white;"><strong>Christopher Hou</strong></a></div>
-            </div>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>
+        const savedTheme = localStorage.getItem('theme');
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.setAttribute('data-theme', savedTheme || (systemDark ? 'dark' : 'light'));
+    </script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/nav-and-footer.css">
+    <title>Christopher Hou</title>
+    <link rel="icon" type="image/jpg" href="assets/images/favicon.jpg"/>
+</head>
+
+<body>
+    <!-- Header placeholder -->
+    <div id="header-placeholder"></div>
+
+    <div class="jumbotron" id="jumbo1">
+        <div class="container">
+            <h1>Software QA Engineer</h1>
+            <p>Danville, California</p>
         </div>
-    </header>
-    <body>
-        <div class="jumbotron" id="jumbo1">
-            <div class="container">
-                <h1>Software Engineer</h1>
-                <p>Davis, California</p>
-            </div>
-        </div>
-        <div class="jumbotron" id="jumbo2">
-            <div class="container">
-                <div class="row">
-                    <div class="col-md-4">
-                        <img src="https://github.com/christopher-hou.png">
-                    </div>
-                    <div class="col-md-8">
-                        <h1>Hi! I'm Chris.</h1>
-                        <hr align="center">
-                        <p>
-                            I'm a college graduate with a BA in computer science from <span class="special-link" id="berkeley">UC Berkeley</span>. Now, I'm seeking to apply my educational understanding of technical and programming skills, software engineering, and user interaction to meet business needs and further grow my CS skills in a workplace environment.
-                        </p>
-                        <p>
-                            In my free time I like to play and study chess, code Discord bots, follow current news and politics, and spreadsheet, graph, and/or visualize anything and everything I do.
-                        </p>
-                    </div>
+    </div>
+    <div class="jumbotron" id="jumbo2">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <img src="https://github.com/christopher-hou.png" id="me">
+                </div>
+                <div class="col-md-6">
+                    <h1>Hi! I'm Chris.</h1>
+                    <hr align="center">
+                    <p>I'm a software QA engineer at <span class="special-link darkblue">ASML</span> and a computer science graduate from <span class="special-link darkblue">UC Berkeley</span>. I focus on advancing product quality through automation, comprehensive testing, and collaborative problem-solving. At ASML, I ranked in the top 3 of my department for bug reporting and verification, created tools adopted by 60+ engineers across 8 teams, and expanded GPU and automation test coverage to hasten the bug lifecycle.</p>
+                    <p>My technical strengths include <strong>Python</strong>, test automation, regression testing, bug lifecycle management, Robot Framework, and GUI testing. I thrive in fast-paced, cross-functional teams where adaptability and continuous improvement matter most.</p>
+                    <p>Outside of work, I enjoy chess, building Discord bots, volunteering at animal shelters, writing, following current events, and visualizing data of all kinds.</p>
                 </div>
             </div>
         </div>
-        <footer>
-            <div class="container text-center">
-                <div class="row">
-                    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
-                        <ul class="list-inline text-center">
-                            <li>
-                                <a href="https://github.com/christopher-hou">
-                                <span class="fa-stack fa-2x">
-                                <i class="fa fa-circle fa-stack-2x"></i>
-                                <i class="fa fa-github fa-stack-1x fa-inverse"></i>
-                                </span>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="https://www.linkedin.com/in/christopher-hou/">
-                                <span class="fa-stack fa-2x">
-                                <i class="fa fa-circle fa-stack-2x"></i>
-                                <i class="fa fa-linkedin fa-stack-1x fa-inverse"></i>
-                                </span>
-                                </a>
-                            </li>
-                            <li>
-                                <a href="mailto:chris.hou@berkeley.edu">
-                                <span class="fa-stack fa-2x">
-                                <i class="fa fa-circle fa-stack-2x"></i>
-                                <i class="fa fa-envelope-o fa-stack-1x fa-inverse"></i>
-                                </span>
-                                </a>
-                            </li>
-                        </ul>
-                        <p>Christopher Hou 2022 &copy;</p>
-                    </div>
-                </div>
-            </div>
-        </footer>
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
-        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
-    </body>
+    </div>
+
+    <!-- Footer placeholder -->
+    <div id="footer-placeholder"></div>
+
+    <script src="assets/js/script.js"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+</body>
+
 </html>

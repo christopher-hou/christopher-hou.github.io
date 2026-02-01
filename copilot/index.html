@@ -4,13 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nation Game</title>
+    <link rel="icon" href="favicon.png">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="game-container">
         <header>
-            <h1>[NATION GAME]</h1>
+            <h1>🌎 NATION GAME 🌎</h1>
             <p class="subtitle">Conquer, Trade, and Dominate the World</p>
+            <button id="rules-btn" class="rules-btn" title="View Game Rules">📖 Rules</button>
         </header>
 
         <div class="game-layout">
@@ -29,7 +31,7 @@
                         <select id="war-target"></select>
                     </div>
                     <button id="declare-war-btn" class="war-btn tooltip">
-                        Declare War (5 PC)
+                        ⚔️ Declare War (5 PC)
                         <span class="tooltiptext">Costs 5 Political Capital. War begins next turn. Winner takes all territory.</span>
                     </button>
                     <h3>Currently Viewing</h3>
@@ -58,15 +60,15 @@
                             <span class="stat-value" id="army-count">0</span>
                         </div>
                         <button id="buy-army-btn" class="army-btn tooltip">
-                            Buy Army ($5)
+                            🪖 Buy Army ($5)
                             <span class="tooltiptext">Purchase army units to declare war. Higher army count wins battles.</span>
                         </button>
                         <button id="claim-tile-btn" class="claim-tile-btn tooltip" style="display: none;">
-                            Claim Tile ($2)
+                            🗺️ Claim Tile ($2)
                             <span class="tooltiptext">Claim this unclaimed tile. Requires $2 and at least 1 army unit. Tiles above 25 generate bonus resources.</span>
                         </button>
                     <div style="margin-top:10px;">
-                        <label for="nation-select">Switch Nation:</label>
+                        <label for="nation-select">Switch Nation: 🌐</label>
                         <select id="nation-select"></select>
                     </div>
                 </div>
@@ -97,7 +99,7 @@
                             <input type="number" id="request-money" min="0" placeholder="Money">
                             <input type="number" id="request-pc" min="0" placeholder="Political Capital">
                         </div>
-                        <button type="button" id="trade-propose-btn" class="trade-btn">Propose Trade</button>
+                        <button type="button" id="trade-propose-btn" class="trade-btn">💱 Propose Trade</button>
                     </form>
                     <div class="trade-log">
                         <h4>Trade History</h4>
@@ -143,11 +145,11 @@
                             <span class="turn-label">Turn:</span>
                             <span class="turn-value" id="turn-number">1</span>
                             <button id="ai-play-turn-btn" class="ai-play-turn-btn tooltip">
-                                AI Play Turn
+                                🤖 AI Play Turn
                                 <span class="tooltiptext">Let AI make decisions for your nation this turn</span>
                             </button>
                             <button id="end-turn-btn" class="end-turn-btn tooltip">
-                                End Turn
+                                ⏭️ End Turn
                                 <span class="tooltiptext">End your turn and let all AI nations play</span>
                             </button>
                         </div>
@@ -158,7 +160,7 @@
                 
                 <!-- Legend showing all nations -->
                 <div class="legend">
-                    <h3>Nations</h3>
+                    <h3>🗺️ Nations</h3>
                     <div class="legend-items" id="legend-items"></div>
                 </div>
             </main>
@@ -198,6 +200,99 @@
     <!-- Processing Overlay -->
     <div id="processing-overlay" class="processing-overlay">
         <div class="processing-message">Processing Turn...</div>
+    </div>
+
+    <!-- Game Rules Modal -->
+    <div id="game-rules-modal" class="game-rules-modal">
+        <div class="game-rules-content">
+            <div class="game-rules-header">
+                <h1>📖 Game Rules</h1>
+                <button id="close-rules-btn" class="close-rules-btn">&times;</button>
+            </div>
+            <div class="game-rules-body">
+                <div class="rules-section">
+                    <h2>🎮 Starting Resources</h2>
+                    <p>Every nation begins with:</p>
+                    <ul>
+                        <li><strong>25 tiles</strong> of territory</li>
+                        <li><strong>$10</strong> in money</li>
+                        <li><strong>10 PC</strong> (Political Capital)</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h2>🏗️ Projects</h2>
+                    <p>Build projects to generate resources each turn:</p>
+                    <ul>
+                        <li>Projects cost <strong>money and/or PC</strong> to build</li>
+                        <li>Each project generates <strong>money and/or PC per turn</strong></li>
+                        <li>Projects progress through <strong>Early Game</strong> → <strong>Mid Game</strong> → <strong>Late Game</strong></li>
+                        <li><strong>Maximum 5 projects per nation</strong> (increases by 1 for each war victory)</li>
+                        <li>You can destroy projects to free up slots</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h2>💰 Economy & Territory</h2>
+                    <ul>
+                        <li>Projects generate automatic income each turn</li>
+                        <li><strong>Each territory tile beyond 25</strong> generates <strong>1 money OR 1 PC</strong> per turn (randomly determined)</li>
+                        <li>Claim unclaimed tiles adjacent to your territory</li>
+                        <li>Use territory expansion to increase your resource generation</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h2>🪖 Military & War</h2>
+                    <ul>
+                        <li>Buy Army units for <strong>$5 each</strong></li>
+                        <li>Declare war on neighboring nations for <strong>5 PC</strong></li>
+                        <li><strong>Win wars by having more army than your opponent</strong> at end of turn</li>
+                        <li><strong>War victory rewards:</strong>
+                            <ul>
+                                <li>50% of opponent's money and PC (divided among attackers if multiple)</li>
+                                <li>Control of opponent's territory (divided evenly)</li>
+                                <li>+1 project slot for each attacker</li>
+                            </ul>
+                        </li>
+                        <li>You can only declare war on nations you share a border with</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h2>💱 Diplomacy</h2>
+                    <ul>
+                        <li><strong>Propose trades</strong> with other nations (exchange money and PC)</li>
+                        <li>Other nations will <strong>accept or reject</strong> based on fairness and their needs</li>
+                        <li><strong>Propose a draw</strong> if all remaining nations agree to end peacefully</li>
+                        <li><strong>Save and load</strong> your game at any time</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h2>🏆 Victory Conditions</h2>
+                    <ul>
+                        <li><strong>Conquest Victory:</strong> Defeat all other nations and control the entire world</li>
+                        <li><strong>Draw:</strong> All remaining nations agree to end the game in a draw</li>
+                        <li><strong>Defeat:</strong> Your nation is conquered in war</li>
+                    </ul>
+                </div>
+
+                <div class="rules-section">
+                    <h2>⚙️ Gameplay Tips</h2>
+                    <ul>
+                        <li>Plan your resource generation with projects early</li>
+                        <li>Build army when enemies are nearby or threatening</li>
+                        <li>Use diplomacy to your advantage—trade carefully!</li>
+                        <li>Expand territory to increase passive income</li>
+                        <li>Watch AI activity in the log to anticipate threats</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="game-rules-footer">
+                <button id="close-rules-footer-btn" class="close-rules-btn-footer">Close Rules</button>
+            </div>
+        </div>
     </div>
 
     <script src="game.js"></script>

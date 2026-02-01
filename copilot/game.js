@@ -8,9 +8,11 @@ let viewingNationIndex = 0; // Which nation's stats are currently being viewed
 
 // Nation class
 class Nation {
-    constructor({ name, emoji, color, territory, money = 10, politicalCapital = 10, army = 0, maxProjects = 5 }) {
+    constructor({ name, flag = null, emoji = '', color, territory, money = 10, politicalCapital = 10, army = 0, maxProjects = 5 }) {
         this.name = name;
-        this.emoji = emoji;
+        // `flag` is a path to an SVG file. `emoji` is kept only as a fallback text.
+        this.flag = flag;
+        this.emoji = emoji || '';
         this.color = color;
         this.territory = territory; // Array of {x, y}
         this.money = money;
@@ -41,7 +43,7 @@ const PROJECT_TYPES = [
     // Early game projects (lower costs, modest returns)
     new Project({
         id: 1,
-        name: 'Farm Collective',
+        name: '🌾 Farm Collective',
         moneyCost: 5,
         pcCost: 2,
         moneyGen: 2,
@@ -51,7 +53,7 @@ const PROJECT_TYPES = [
     }),
     new Project({
         id: 2,
-        name: 'Town Hall',
+        name: '🏛️ Town Hall',
         moneyCost: 4,
         pcCost: 3,
         moneyGen: 0,
@@ -61,7 +63,7 @@ const PROJECT_TYPES = [
     }),
     new Project({
         id: 3,
-        name: 'Trade Post',
+        name: '🏪 Trade Post',
         moneyCost: 6,
         pcCost: 1,
         moneyGen: 2,
@@ -73,7 +75,7 @@ const PROJECT_TYPES = [
     // Mid game projects (moderate costs, good returns)
     new Project({
         id: 4,
-        name: 'Factory Complex',
+        name: '🏭 Factory Complex',
         moneyCost: 15,
         pcCost: 5,
         moneyGen: 5,
@@ -83,7 +85,7 @@ const PROJECT_TYPES = [
     }),
     new Project({
         id: 5,
-        name: 'University',
+        name: '📚 University',
         moneyCost: 12,
         pcCost: 8,
         moneyGen: 2,
@@ -93,7 +95,7 @@ const PROJECT_TYPES = [
     }),
     new Project({
         id: 6,
-        name: 'Banking District',
+        name: '🏦 Banking District',
         moneyCost: 20,
         pcCost: 4,
         moneyGen: 7,
@@ -103,7 +105,7 @@ const PROJECT_TYPES = [
     }),
     new Project({
         id: 7,
-        name: 'Parliament Building',
+        name: '🏢 Parliament Building',
         moneyCost: 10,
         pcCost: 12,
         moneyGen: 1,
@@ -115,7 +117,7 @@ const PROJECT_TYPES = [
     // Late game projects (high costs, excellent returns)
     new Project({
         id: 8,
-        name: 'Tech Megacorp',
+        name: '🚀 Tech Megacorp',
         moneyCost: 35,
         pcCost: 15,
         moneyGen: 10,
@@ -125,7 +127,7 @@ const PROJECT_TYPES = [
     }),
     new Project({
         id: 9,
-        name: 'Global Embassy',
+        name: '🌍 Global Embassy',
         moneyCost: 25,
         pcCost: 25,
         moneyGen: 3,
@@ -135,7 +137,7 @@ const PROJECT_TYPES = [
     }),
     new Project({
         id: 10,
-        name: 'Wonder of the World',
+        name: '🕌 Wonder of the World',
         moneyCost: 50,
         pcCost: 30,
         moneyGen: 8,
@@ -271,15 +273,26 @@ const TERRITORIES = generateRandomTerritories(8, TERRITORY_SIZE, GRID_SIZE);
 
 // Initialize 8 nations
 const NATIONS = [
-    new Nation({ name: 'United States', emoji: 'US', color: '#FF0000', territory: TERRITORIES[0] }), // Red (Primary)
-    new Nation({ name: 'China', emoji: 'CN', color: '#0000FF', territory: TERRITORIES[1] }), // Blue (Primary)
-    new Nation({ name: 'Russia', emoji: 'RU', color: '#00FF00', territory: TERRITORIES[2] }), // Green (Primary)
-    new Nation({ name: 'United Kingdom', emoji: 'UK', color: '#FFFF00', territory: TERRITORIES[3] }), // Yellow (Secondary)
-    new Nation({ name: 'France', emoji: 'FR', color: '#FF00FF', territory: TERRITORIES[4] }), // Magenta (Secondary)
-    new Nation({ name: 'Germany', emoji: 'DE', color: '#00FFFF', territory: TERRITORIES[5] }), // Cyan (Secondary)
-    new Nation({ name: 'Japan', emoji: 'JP', color: '#FFA500', territory: TERRITORIES[6] }), // Orange (Secondary)
-    new Nation({ name: 'India', emoji: 'IN', color: '#800080', territory: TERRITORIES[7] }) // Purple (Secondary)
+    new Nation({ name: 'United States', flag: 'flags/us.svg', emoji: '', color: '#FF0000', territory: TERRITORIES[0] }),
+    new Nation({ name: 'China', flag: 'flags/cn.svg', emoji: '', color: '#0000FF', territory: TERRITORIES[1] }),
+    new Nation({ name: 'Russia', flag: 'flags/ru.svg', emoji: '', color: '#00FF00', territory: TERRITORIES[2] }),
+    new Nation({ name: 'United Kingdom', flag: 'flags/gb.svg', emoji: '', color: '#FFFF00', territory: TERRITORIES[3] }),
+    new Nation({ name: 'France', flag: 'flags/fr.svg', emoji: '', color: '#FF00FF', territory: TERRITORIES[4] }),
+    new Nation({ name: 'Germany', flag: 'flags/de.svg', emoji: '', color: '#00FFFF', territory: TERRITORIES[5] }),
+    new Nation({ name: 'Japan', flag: 'flags/jp.svg', emoji: '', color: '#FFA500', territory: TERRITORIES[6] }),
+    new Nation({ name: 'India', flag: 'flags/in.svg', emoji: '', color: '#800080', territory: TERRITORIES[7] })
 ];
+
+// Helper to produce a small flag image HTML snippet (used when inserting innerHTML)
+function flagImgHtml(nation, className = 'flag-img', width = 20, height = 14) {
+    if (!nation) return '';
+    if (nation.flag) {
+        // Don't add margin-right for cell-flag and legend-flag since they're centered
+        const margin = (className === 'cell-flag' || className === 'legend-flag') ? '' : 'margin-right:6px;';
+        return `<img src="${nation.flag}" class="${className}" alt="${nation.name} flag" width="${width}" height="${height}" style="vertical-align:middle;${margin}">`;
+    }
+    return nation.emoji ? `${nation.emoji} ` : '';
+}
 
 function generateTerritory(startX, startY, width, height) {
     const territory = [];
@@ -304,7 +317,7 @@ function initializeGrid(capturedCells = []) {
             if (nationIndex !== -1) {
                 const nation = NATIONS[nationIndex];
                 cell.style.backgroundColor = nation.color;
-                cell.textContent = nation.emoji;
+                cell.innerHTML = flagImgHtml(nation, 'cell-flag', 16, 12);
                 cell.dataset.nation = nationIndex;
                 
                 // Add captured animation if this cell was just captured
@@ -409,7 +422,7 @@ function populateNationSelect() {
     NATIONS.forEach((nation, idx) => {
         const option = document.createElement('option');
         option.value = idx;
-        option.textContent = `${nation.emoji} ${nation.name}`;
+        option.textContent = `${nation.name}`;
         select.appendChild(option);
     });
     select.selectedIndex = 0;
@@ -430,9 +443,9 @@ function setCurrentNation(nationIndex) {
         
         // Update display with indicator if viewing another nation
         if (isPlayerNation) {
-            document.getElementById('current-nation').textContent = `${nation.emoji} ${nation.name} [YOU]`;
+            document.getElementById('current-nation').innerHTML = `${flagImgHtml(nation, 'current-flag', 20,14)} ${nation.name} [YOU]`;
         } else {
-            document.getElementById('current-nation').textContent = `${nation.emoji} ${nation.name} [VIEWING]`;
+            document.getElementById('current-nation').innerHTML = `${flagImgHtml(nation, 'current-flag', 20,14)} ${nation.name} [VIEWING]`;
         }
         
         document.getElementById('territory-size').textContent = `${nation.territory.length} cells`;
@@ -461,7 +474,7 @@ function setCurrentNation(nationIndex) {
         
         // Populate war target dropdown - only show bordering nations
         const warTargetSelect = document.getElementById('war-target');
-        if (warTargetSelect) {
+            if (warTargetSelect) {
             warTargetSelect.innerHTML = '';
             warTargetSelect.disabled = !isPlayerNation;
             
@@ -470,7 +483,7 @@ function setCurrentNation(nationIndex) {
                 if (n.name !== nation.name && doNationsShareBorder(nation, n)) {
                     const option = document.createElement('option');
                     option.value = n.name;
-                    option.textContent = `${n.emoji} ${n.name}`;
+                    option.textContent = `${n.name}`;
                     warTargetSelect.appendChild(option);
                     hasBorderingNations = true;
                 }
@@ -645,7 +658,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Refresh display for currently viewed nation
             setCurrentNation(viewingNationIndex);
             renderWarStatus();
-            showNotification(`War declared on ${targetNation.emoji} ${targetNation.name}!`, 'success');
+            showNotification(`War declared on ${flagImgHtml(targetNation,'mini-flag',16,12)} ${targetNation.name}!`, 'success');
         });
     }
     renderWarStatus();
@@ -708,13 +721,13 @@ function renderWarStatus() {
         
         let attackerDisplay;
         if (war.attackers.length === 1) {
-            attackerDisplay = `${war.attackers[0].emoji} ${war.attackers[0].name} (${war.totalAttackerArmy}⚔️)`;
+            attackerDisplay = `${flagImgHtml(war.attackers[0], 'mini-flag',14,10)} ${war.attackers[0].name} (${war.totalAttackerArmy}⚔️)`;
         } else {
-            const attackerNames = war.attackers.map(a => `${a.emoji} ${a.name}`).join(', ');
+            const attackerNames = war.attackers.map(a => `${flagImgHtml(a,'mini-flag',14,10)} ${a.name}`).join(', ');
             attackerDisplay = `Coalition [${attackerNames}] (${war.totalAttackerArmy}⚔️)`;
         }
         
-        const defenderDisplay = `${war.defender.emoji} ${war.defender.name} (${war.defenderArmy}⚔️)`;
+        const defenderDisplay = `${flagImgHtml(war.defender,'mini-flag',14,10)} ${war.defender.name} (${war.defenderArmy}⚔️)`;
         
         div.innerHTML = `<span>${attackerDisplay} <b>vs</b> ${defenderDisplay}</span>` +
             (war.winner ? `<span class="war-winner">Winner: ${war.winner}</span>` : '');
@@ -733,7 +746,7 @@ function updateDiplomacyPanel(currentNation, isPlayerNation = true) {
     getOtherNations(currentNation.name).forEach(nation => {
         const div = document.createElement('div');
         div.className = 'diplomacy-nation-row';
-        div.innerHTML = `<span>${nation.emoji} ${nation.name}</span>`;
+        div.innerHTML = `<span>${flagImgHtml(nation,'mini-flag',16,12)} ${nation.name}</span>`;
         nationListDiv.appendChild(div);
     });
 
@@ -745,7 +758,7 @@ function updateDiplomacyPanel(currentNation, isPlayerNation = true) {
     getOtherNations(currentNation.name).forEach(nation => {
         const option = document.createElement('option');
         option.value = nation.name;
-        option.textContent = `${nation.emoji} ${nation.name}`;
+        option.textContent = `${nation.name}`;
         tradeTargetSelect.appendChild(option);
     });
     
@@ -952,7 +965,8 @@ function buildProject(nationIndex, projectType) {
 function showNotification(message, type = 'info') {
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
-    notification.textContent = message;
+    // Allow HTML so SVG flags can be embedded in messages
+    notification.innerHTML = message;
     document.body.appendChild(notification);
     
     setTimeout(() => {
@@ -970,20 +984,20 @@ function showNotification(message, type = 'info') {
 function createLegend() {
     const legendItems = document.getElementById('legend-items');
     legendItems.innerHTML = '';
-    NATIONS.forEach((nation, index) => {
-        const item = document.createElement('div');
-        item.className = 'legend-item';
-        const colorBox = document.createElement('div');
-        colorBox.className = 'legend-color';
-        colorBox.style.backgroundColor = nation.color;
-        colorBox.textContent = nation.emoji;
-        const name = document.createElement('div');
-        name.className = 'legend-name';
-        name.textContent = nation.name;
-        item.appendChild(colorBox);
-        item.appendChild(name);
-        legendItems.appendChild(item);
-    });
+        NATIONS.forEach(nation => {
+            const item = document.createElement('div');
+            item.className = 'legend-item';
+            const colorBox = document.createElement('div');
+            colorBox.className = 'legend-color';
+            colorBox.style.backgroundColor = nation.color;
+            colorBox.innerHTML = flagImgHtml(nation, 'legend-flag', 18, 12);
+            const name = document.createElement('div');
+            name.className = 'legend-name';
+            name.textContent = nation.name;
+            item.appendChild(colorBox);
+            item.appendChild(name);
+            legendItems.appendChild(item);
+        });
 }
 
 // Trade proposal function
@@ -1067,7 +1081,7 @@ function proposeTrade() {
     
     // Check if proposing nation can afford what they're offering
     if (currentNation.money < offerMoney || currentNation.politicalCapital < offerPC) {
-        const currentNationSpan = `<span class="trade-nation" style="color: ${currentNation.color}; font-weight: bold;">${currentNation.emoji} ${currentNation.name}</span>`;
+        const currentNationSpan = `<span class="trade-nation" style="color: ${currentNation.color}; font-weight: bold;">${flagImgHtml(currentNation,'mini-flag',16,12)} ${currentNation.name}</span>`;
         const entry = `${currentNationSpan} <span class="trade-rejected">cannot afford to offer this trade!</span>`;
         tradeHistory.unshift(entry);
         renderTradeHistory();
@@ -1081,8 +1095,8 @@ function proposeTrade() {
     const accepted = evaluateTradeProposal(currentNation, targetNation, offerMoney, offerPC, requestMoney, requestPC);
     
     // Create trade log entry
-    const currentNationSpan = `<span class="trade-nation" style="color: ${currentNation.color}; font-weight: bold;">${currentNation.emoji} ${currentNation.name}</span>`;
-    const targetNationSpan = `<span class="trade-nation" style="color: ${targetNation.color}; font-weight: bold;">${targetNation.emoji} ${targetNation.name}</span>`;
+    const currentNationSpan = `<span class="trade-nation" style="color: ${currentNation.color}; font-weight: bold;">${flagImgHtml(currentNation,'mini-flag',16,12)} ${currentNation.name}</span>`;
+    const targetNationSpan = `<span class="trade-nation" style="color: ${targetNation.color}; font-weight: bold;">${flagImgHtml(targetNation,'mini-flag',16,12)} ${targetNation.name}</span>`;
     
     let offerText = '';
     if (offerMoney > 0 || offerPC > 0) {
@@ -1148,6 +1162,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Turn system setup
     setupTurnSystem();
+    
+    // Rules modal setup
+    setupRulesModal();
     
     // Initialize AI action log
     renderAIActionLog();
@@ -1282,6 +1299,49 @@ function setupTurnSystem() {
     });
     
     updateTurnDisplay();
+}
+
+// Setup Game Rules Modal
+function setupRulesModal() {
+    const rulesBtn = document.getElementById('rules-btn');
+    const rulesModal = document.getElementById('game-rules-modal');
+    const closeRulesBtn = document.getElementById('close-rules-btn');
+    const closeRulesFooterBtn = document.getElementById('close-rules-footer-btn');
+    
+    if (!rulesBtn || !rulesModal) return;
+    
+    // Open rules modal
+    rulesBtn.addEventListener('click', () => {
+        rulesModal.classList.add('show');
+    });
+    
+    // Close rules modal - X button
+    if (closeRulesBtn) {
+        closeRulesBtn.addEventListener('click', () => {
+            rulesModal.classList.remove('show');
+        });
+    }
+    
+    // Close rules modal - Close button
+    if (closeRulesFooterBtn) {
+        closeRulesFooterBtn.addEventListener('click', () => {
+            rulesModal.classList.remove('show');
+        });
+    }
+    
+    // Close modal when clicking outside of it
+    rulesModal.addEventListener('click', (event) => {
+        if (event.target === rulesModal) {
+            rulesModal.classList.remove('show');
+        }
+    });
+    
+    // Close modal with Escape key
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && rulesModal.classList.contains('show')) {
+            rulesModal.classList.remove('show');
+        }
+    });
 }
 
 // AI plays turn for the player's nation, then ends the turn
@@ -1444,7 +1504,7 @@ function endTurn() {
                 if (playerWasDefeated) {
                     gameOver = true;
                     const firstAttacker = attackers[0];
-                    showNotification(`You have been defeated by a coalition led by ${firstAttacker.emoji} ${firstAttacker.name}!`, 'error');
+                    showNotification(`You have been defeated by a coalition led by ${flagImgHtml(firstAttacker,'mini-flag',16,12)} ${firstAttacker.name}!`, 'error');
                     hideProcessing();
                     showGameOverScreen(firstAttacker, 'defeat');
                     return; // Exit early to prevent further turn processing
@@ -1469,10 +1529,10 @@ function endTurn() {
             
             // Notification
             if (attackers.length === 1) {
-                showNotification(`${attackers[0].emoji} ${attackers[0].name} defeated ${loser.emoji} ${loser.name} in war! Gained ${moneyPerAttacker} money, ${pcPerAttacker} PC, and 1 project slot.`, 'success');
+                showNotification(`${flagImgHtml(attackers[0],'mini-flag',14,10)} ${attackers[0].name} defeated ${flagImgHtml(loser,'mini-flag',14,10)} ${loser.name} in war! Gained ${moneyPerAttacker} money, ${pcPerAttacker} PC, and 1 project slot.`, 'success');
             } else {
-                const attackerList = attackers.map(a => `${a.emoji} ${a.name}`).join(', ');
-                showNotification(`Coalition (${attackerList}) defeated ${loser.emoji} ${loser.name}! Each gained ${moneyPerAttacker} money, ${pcPerAttacker} PC, and 1 project slot.`, 'success');
+                const attackerList = attackers.map(a => `${flagImgHtml(a,'mini-flag',14,10)} ${a.name}`).join(', ');
+                showNotification(`Coalition (${attackerList}) defeated ${flagImgHtml(loser,'mini-flag',14,10)} ${loser.name}! Each gained ${moneyPerAttacker} money, ${pcPerAttacker} PC, and 1 project slot.`, 'success');
             }
             
             // Check for victory after combat
@@ -1513,7 +1573,7 @@ function endTurn() {
                     // If player was defeated, show game over immediately
                     if (playerWasDefeated) {
                         gameOver = true;
-                        showNotification(`You have been defeated by ${defender.emoji} ${defender.name}!`, 'error');
+                        showNotification(`You have been defeated by ${flagImgHtml(defender,'mini-flag',16,12)} ${defender.name}!`, 'error');
                         hideProcessing();
                         showGameOverScreen(defender, 'defeat');
                         return; // Exit early to prevent further turn processing
@@ -1535,7 +1595,7 @@ function endTurn() {
                 renderWarStatus();
                 
                 // Notification
-                showNotification(`${defender.emoji} ${defender.name} defeated ${loser.emoji} ${loser.name} in war! Gained ${Math.floor(loserMoney * 0.5)} money, ${Math.floor(loserPC * 0.5)} PC, and 1 project slot.`, 'success');
+                showNotification(`${flagImgHtml(defender,'mini-flag',14,10)} ${defender.name} defeated ${flagImgHtml(loser,'mini-flag',14,10)} ${loser.name} in war! Gained ${Math.floor(loserMoney * 0.5)} money, ${Math.floor(loserPC * 0.5)} PC, and 1 project slot.`, 'success');
                 
                 // Check for victory after combat
                 checkVictory();
@@ -1796,8 +1856,8 @@ function aiTakeTurn(nation) {
             
             if (projectsBuilt === 1) {
                 logAIAction(
-                    nation.emoji, 
-                    nation.name, 
+                    flagImgHtml(nation,'mini-flag',14,10),
+                    nation.name,
                     `built ${projectToBuild.name} ($${projectToBuild.moneyCost}, ${projectToBuild.pcCost} PC)`,
                     nation.color
                 );
@@ -1810,8 +1870,8 @@ function aiTakeTurn(nation) {
     // Log if multiple projects built
     if (projectsBuilt > 1) {
         logAIAction(
-            nation.emoji, 
-            nation.name, 
+            flagImgHtml(nation,'mini-flag',14,10),
+            nation.name,
             `built ${projectsBuilt} projects in total`,
             nation.color
         );
@@ -1827,12 +1887,12 @@ function aiTakeTurn(nation) {
         armiesBought++;
     }
     if (armiesBought > 0) {
-        logAIAction(
-            nation.emoji, 
-            nation.name, 
-            `purchased ${armiesBought} army unit${armiesBought > 1 ? 's' : ''} ($${ARMY_COST * armiesBought})`,
-            nation.color
-        );
+            logAIAction(
+                flagImgHtml(nation,'mini-flag',14,10),
+                nation.name,
+                `purchased ${armiesBought} army unit${armiesBought > 1 ? 's' : ''} ($${ARMY_COST * armiesBought})`,
+                nation.color
+            );
     }
     
     // 2.5. Try to claim unclaimed tiles (more aggressive when wealthy)
@@ -1860,8 +1920,8 @@ function aiTakeTurn(nation) {
         
         if (tilesClaimed > 0) {
             logAIAction(
-                nation.emoji, 
-                nation.name, 
+                flagImgHtml(nation,'mini-flag',14,10),
+                nation.name,
                 `claimed ${tilesClaimed} unclaimed tile${tilesClaimed > 1 ? 's' : ''} ($${TILE_CLAIM_COST * tilesClaimed})`,
                 nation.color
             );
@@ -1881,8 +1941,8 @@ function aiTakeTurn(nation) {
         );
         
         // Create trade log entry
-        const currentNationSpan = `<span class="trade-nation" style="color: ${nation.color}; font-weight: bold;">${nation.emoji} ${nation.name}</span>`;
-        const targetNationSpan = `<span class="trade-nation" style="color: ${trade.target.color}; font-weight: bold;">${trade.target.emoji} ${trade.target.name}</span>`;
+        const currentNationSpan = `<span class="trade-nation" style="color: ${nation.color}; font-weight: bold;">${flagImgHtml(nation,'mini-flag',14,10)} ${nation.name}</span>`;
+        const targetNationSpan = `<span class="trade-nation" style="color: ${trade.target.color}; font-weight: bold;">${flagImgHtml(trade.target,'mini-flag',14,10)} ${trade.target.name}</span>`;
         
         let offerText = '';
         if (trade.offerMoney > 0 || trade.offerPC > 0) {
@@ -1924,17 +1984,17 @@ function aiTakeTurn(nation) {
             trade.target.politicalCapital -= trade.requestPC;
             
             logAIAction(
-                nation.emoji, 
-                nation.name, 
-                `traded with ${trade.target.emoji} ${trade.target.name} - ACCEPTED`,
+                flagImgHtml(nation,'mini-flag',14,10),
+                nation.name,
+                `traded with ${flagImgHtml(trade.target,'mini-flag',14,10)} ${trade.target.name} - ACCEPTED`,
                 nation.color
             );
         } else {
             entry += ` <span class="trade-rejected">✗ REJECTED</span>`;
             logAIAction(
-                nation.emoji, 
-                nation.name, 
-                `trade with ${trade.target.emoji} ${trade.target.name} - REJECTED`,
+                flagImgHtml(nation,'mini-flag',14,10),
+                nation.name,
+                `trade with ${flagImgHtml(trade.target,'mini-flag',14,10)} ${trade.target.name} - REJECTED`,
                 nation.color
             );
         }
@@ -1956,9 +2016,9 @@ function aiTakeTurn(nation) {
             turn: currentTurn + 1
         });
         logAIAction(
-            nation.emoji, 
-            nation.name, 
-            `declared war on ${warTarget.emoji} ${warTarget.name}!`,
+            flagImgHtml(nation,'mini-flag',14,10),
+            nation.name,
+            `declared war on ${flagImgHtml(warTarget,'mini-flag',14,10)} ${warTarget.name}!`,
             nation.color
         );
         renderWarStatus();
@@ -1997,7 +2057,7 @@ function executeAITurns() {
             const modal = document.getElementById('war-declaration-modal');
             const message = document.getElementById('war-declaration-message');
             
-            const attackersList = warsOnPlayer.map(n => `${n.emoji} ${n.name}`).join(', ');
+            const attackersList = warsOnPlayer.map(n => `${flagImgHtml(n,'mini-flag',14,10)} ${n.name}`).join(', ');
             message.innerHTML = `
                 <strong style="font-size: 1.2em;">Multiple nations have declared war on you!</strong>
                 <br><br>
@@ -2049,9 +2109,9 @@ function showGameOverScreen(winner, type) {
         title.className = isPlayer ? 'victory-title' : 'defeat-title';
         
         if (isPlayer) {
-            message.textContent = `Congratulations! ${winner.emoji} ${winner.name} has conquered the world!`;
+            message.innerHTML = `Congratulations! ${flagImgHtml(winner,'mini-flag',18,12)} ${winner.name} has conquered the world!`;
         } else {
-            message.textContent = `${winner.emoji} ${winner.name} has conquered the world. Better luck next time!`;
+            message.innerHTML = `${flagImgHtml(winner,'mini-flag',18,12)} ${winner.name} has conquered the world. Better luck next time!`;
         }
         
         stats.innerHTML = `
@@ -2065,11 +2125,11 @@ function showGameOverScreen(winner, type) {
     } else if (type === 'defeat') {
         title.textContent = 'DEFEAT';
         title.className = 'defeat-title';
-        message.textContent = `You have been eliminated! ${winner.emoji} ${winner.name} has defeated you in battle!`;
+        message.innerHTML = `You have been eliminated! ${flagImgHtml(winner,'mini-flag',18,12)} ${winner.name} has defeated you in battle!`;
         
         stats.innerHTML = `
             <div class="stat-line"><strong>Defeated on Turn:</strong> ${currentTurn}</div>
-            <div class="stat-line"><strong>Defeated by:</strong> ${winner.emoji} ${winner.name}</div>
+            <div class="stat-line"><strong>Defeated by:</strong> ${flagImgHtml(winner,'mini-flag',14,10)} ${winner.name}</div>
             <div class="stat-line"><strong>Their Army:</strong> ${winner.army} units</div>
         `;
     } else if (type === 'draw') {
@@ -2083,7 +2143,7 @@ function showGameOverScreen(winner, type) {
         NATIONS.forEach(nation => {
             statsHTML += `
                 <div class="nation-final-stats">
-                    <strong>${nation.emoji} ${nation.name}</strong><br>
+                    <strong>${flagImgHtml(nation,'mini-flag',14,10)} ${nation.name}</strong><br>
                     Territory: ${nation.territory.length} cells | 
                     Money: $${nation.money} | 
                     PC: ${nation.politicalCapital} | 
@@ -2110,7 +2170,7 @@ function showWarDeclarationModal(attackerNation) {
     const message = document.getElementById('war-declaration-message');
     
     message.innerHTML = `
-        <strong style="font-size: 1.2em;">${attackerNation.emoji} ${attackerNation.name}</strong> 
+        <strong style="font-size: 1.2em;">${flagImgHtml(attackerNation,'mini-flag',18,12)} ${attackerNation.name}</strong> 
         has declared war on you!
         <br><br>
         Prepare your defenses and build your army!
@@ -2121,7 +2181,7 @@ function showWarDeclarationModal(attackerNation) {
     modal.style.display = 'flex';
     
     // Also show a notification
-    showNotification(`⚔️ ${attackerNation.emoji} ${attackerNation.name} has declared war on you!`, 'error');
+    showNotification(`⚔️ ${flagImgHtml(attackerNation,'mini-flag',16,12)} ${attackerNation.name} has declared war on you!`, 'error');
 }
 
 // Hide war declaration modal
@@ -2155,7 +2215,7 @@ function proposeDraw() {
         required: NATIONS.length
     };
     
-    showNotification(`${playerNation.emoji} ${playerNation.name} has proposed a draw! Waiting for other nations...`, 'success');
+    showNotification(`${flagImgHtml(playerNation,'mini-flag',16,12)} ${playerNation.name} has proposed a draw! Waiting for other nations...`, 'success');
     
     // AI nations vote on the draw
     aiVoteOnDraw();
@@ -2188,11 +2248,11 @@ function aiVoteOnDraw() {
         
         if (Math.random() < acceptChance) {
             drawProposal.votes.push(nation.name);
-            logAIAction(nation.emoji, nation.name, 'voted YES on draw proposal', nation.color);
+            logAIAction(flagImgHtml(nation,'mini-flag',14,10), nation.name, 'voted YES on draw proposal', nation.color);
         } else {
-            logAIAction(nation.emoji, nation.name, 'voted NO on draw proposal', nation.color);
+            logAIAction(flagImgHtml(nation,'mini-flag',14,10), nation.name, 'voted NO on draw proposal', nation.color);
             // If any AI rejects, the proposal fails
-            showNotification(`${nation.emoji} ${nation.name} rejected the draw proposal!`, 'error');
+            showNotification(`${flagImgHtml(nation,'mini-flag',14,10)} ${nation.name} rejected the draw proposal!`, 'error');
             drawProposal = null;
             updateDrawProposalUI();
             return;
@@ -2256,14 +2316,14 @@ function resetGame() {
     
     // Reset all nations
     const nationTemplates = [
-        { name: 'United States', emoji: 'US', color: '#FF0000' },
-        { name: 'China', emoji: 'CN', color: '#0000FF' },
-        { name: 'Russia', emoji: 'RU', color: '#00FF00' },
-        { name: 'United Kingdom', emoji: 'UK', color: '#FFFF00' },
-        { name: 'France', emoji: 'FR', color: '#FF00FF' },
-        { name: 'Germany', emoji: 'DE', color: '#00FFFF' },
-        { name: 'Japan', emoji: 'JP', color: '#FFA500' },
-        { name: 'India', emoji: 'IN', color: '#800080' }
+        { name: 'United States', flag: 'flags/us.svg', color: '#FF0000' },
+        { name: 'China', flag: 'flags/cn.svg', color: '#0000FF' },
+        { name: 'Russia', flag: 'flags/ru.svg', color: '#00FF00' },
+        { name: 'United Kingdom', flag: 'flags/gb.svg', color: '#FFFF00' },
+        { name: 'France', flag: 'flags/fr.svg', color: '#FF00FF' },
+        { name: 'Germany', flag: 'flags/de.svg', color: '#00FFFF' },
+        { name: 'Japan', flag: 'flags/jp.svg', color: '#FFA500' },
+        { name: 'India', flag: 'flags/in.svg', color: '#800080' }
     ];
     
     // Clear and rebuild NATIONS array
@@ -2271,7 +2331,7 @@ function resetGame() {
     nationTemplates.forEach((template, index) => {
         NATIONS.push(new Nation({
             name: template.name,
-            emoji: template.emoji,
+            flag: template.flag,
             color: template.color,
             territory: newTerritories[index],
             money: 10,
@@ -2307,6 +2367,7 @@ function saveGame() {
         const gameState = {
             nations: NATIONS.map(nation => ({
                 name: nation.name,
+                flag: nation.flag,
                 emoji: nation.emoji,
                 color: nation.color,
                 territory: nation.territory,

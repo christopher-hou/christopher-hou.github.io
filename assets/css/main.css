@@ -1,0 +1,173 @@
+:root {
+    --bg-color: #ffffff;
+    --text-color: #333333;
+    --jumbotron-bg: #f8f9fa;
+    --navbar-bg: #343a40;
+    --footer-bg: #343a40;
+    --footer-text: #c15959;
+    --link-color: #007bff;
+    --link-hover-color: #0056b3;
+    --special-link-color: #007bff;
+    --border-color: #dee2e6;
+}
+
+[data-theme="dark"] {
+    --bg-color: #121212;
+    --text-color: #e0e0e0;
+    --jumbotron-bg: #1e1e1e;
+    --navbar-bg: #212121;
+    --footer-bg: #212121;
+    --footer-text: #ffb7b7;
+    --link-color: #bb86fc;
+    --link-hover-color: #9965f4;
+    --special-link-color: #bb86fc;
+    --border-color: #424242;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.jumbotron {
+    background-color: var(--jumbotron-bg);
+    border-radius: 0.3rem;
+    transition: background-color 0.3s ease;
+}
+
+.special-link {
+    color: var(--special-link-color);
+    font-weight: bold;
+}
+
+hr {
+    border-color: var(--border-color);
+}
+
+#me {
+    border-radius: 50%;
+    max-width: 100%;
+    height: auto;
+}
+
+.aboutme {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+#borobudur {
+    display: block;
+    margin: auto;
+    width: 50%;
+    padding-top: 1rem;
+}
+
+.projects-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    padding: 30px;
+}
+
+.project-item {
+    position: relative;
+    background: var(--jumbotron-bg);
+    border-radius: 8px;
+    overflow: hidden;
+    aspect-ratio: 1/1;
+    transition: all 0.3s ease;
+}
+
+.project-item.warbot {
+    background-image: url('../images/pnw.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.project-item.bjc {
+    background-image: url('../images/bjc.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.project-item.nationgame {
+    background-image: url('../images/nationgame.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.project-item.pricecompare {
+    background-image: url('../images/pricecomparison.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.project-item:hover {
+    box-shadow: 0 0 15px rgba(0, 123, 255, 0.5);
+    transform: translateY(-5px);
+}
+
+.project-content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 20px;
+    background: rgb(0, 123, 255);
+    color: white;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+    opacity: 0;
+}
+
+.project-item:hover .project-content {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.coming-soon {
+    padding: 40px 30px;
+}
+.coming-soon h2 {
+    margin-bottom: 16px;
+}
+.coming-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+.coming-item {
+    background: var(--jumbotron-bg);
+    padding: 16px;
+    border-radius: 8px;
+    min-height: 80px;
+}
+
+@media only screen and (max-width: 992px) {
+    /* For tablets: */
+    .coming-grid { grid-template-columns: repeat(2, 1fr); }
+    #me {
+        margin-bottom: 2rem;
+    }
+    #borobudur {
+        width: 60%;
+    }
+    .projects-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media only screen and (max-width: 576px) {
+    /* For phones: */
+    #borobudur {
+        width: 80%;
+    }
+    .projects-grid {
+        grid-template-columns: 1fr;
+    }
+}

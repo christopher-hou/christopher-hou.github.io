@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>
+        const savedTheme = localStorage.getItem('theme');
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.setAttribute('data-theme', savedTheme || (systemDark ? 'dark' : 'light'));
+    </script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../assets/css/main.css">
+    <link rel="stylesheet" href="../assets/css/nav-and-footer.css">
+    <title>About Me</title>
+    <link rel="icon" type="image/jpg" href="../assets/images/favicon.jpg" />
+</head>
+
+<body>
+    <!-- Header placeholder -->
+    <div id="header-placeholder"></div>
+
+    <div class="jumbotron" id="jumbo1">
+        <div class="container">
+            <h1 class="aboutme">👋 About Me</h1>
+            <p>Hi, I'm Chris! I'm a Software QA Engineer at ASML Brion in San Jose, CA. I test the quality of products and solutions for our Tachyon platform and pattern technology. I graduated from UC Berkeley with a degree in Computer Science.</p>
+            <p>I discovered my first love for QA during college when I found myself obsessing over unit tests and TDD and achieving the (completely unnecessary) goal of being the first team with 100% code coverage. Combined with my passion for designing user-oriented and documentable products, I love being able to inspect code inside and out to contribute to high-quality, enjoyable, and easy-to-use software.</p>
+            <p>At ASML, I've leveraged my completionist desire for clean code to rank in the top 3 of my department for bug reporting and verification, achieving an 80% reduction in bug-verification turnaround and driving 100% regression tracking across 800+ test cases. I also developed tools adopted by 60+ engineers across 8 teams and expanded GPU test coverage 20-fold.</p>
+            <h1 class="aboutme">💡 What Drives Me</h1>
+            <p>I’m driven by the challenge of making complex systems reliable, efficient, and easy to trust. ASML's machines are the most complex in the world, and it's up to us to get things right the first time when delivering to the customer. For me, software quality isn’t just about preventing bugs — it’s about creating confidence and playing an active part in propelling product engineering.</p>
+            <p>I love finding the balance between precision and creativity: building automation and AI tools that help people, not replace them. In QA, this means constantly refining how I work — making my process more efficient, my testing more complete, and my automation more empowering.</p>
+            <h1 class="aboutme">🌱 Beyond Work</h1>
+            <p>Outside of work, I enjoy chess, volunteering, running, traveling the world, and following current events and the economy. If I’m not debugging a test suite, I’m probably writing a short story, watching movies or The Sopranos with friends, spreadsheeting data that fascinates me, or working on a coding project or app to help myself, my friends, and my family live easier, more colorful lives.</p>
+            <img id="borobudur" src="../assets/images/borobudur.jpg">
+        </div>
+    </div>
+
+    <!-- Footer placeholder -->
+    <div id="footer-placeholder"></div>
+
+    <script src="../assets/js/script.js"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+</body>
+
+</html>

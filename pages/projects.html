@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>
+        const savedTheme = localStorage.getItem('theme');
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.setAttribute('data-theme', savedTheme || (systemDark ? 'dark' : 'light'));
+    </script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../assets/css/main.css">
+    <link rel="stylesheet" href="../assets/css/nav-and-footer.css">
+    <title>Projects</title>
+    <link rel="icon" type="image/jpg" href="../assets/images/favicon.jpg" />
+</head>
+
+<body>
+    <!-- Header placeholder -->
+    <div id="header-placeholder"></div>
+
+    <div class="projects-grid">
+        <a href="https://github.com/christopher-hou/warbot-suite-demo" class="project-item warbot" target="_blank" rel="noopener noreferrer">
+            <div class="project-content">
+                <h3>🤖 Warbot Suite — Discord Bot for Politics & War (2020-2025)</h3>
+                <p>Discord bot for alliance ops: war coordination, market monitoring, and intelligence gathering.</p>
+            </div>
+        </a>
+        <a href="https://teachers.bjc.berkeley.edu/" class="project-item bjc" target="_blank" rel="noopener noreferrer">
+            <div class="project-content">
+                <h3>👩‍🏫 BJC Teachers — CS169L (2021)</h3>
+                <p>Rails app for teacher login/auth, DB-backed teacher data, admin/teacher roles, API; CI with CodeClimate/Travis, deployed on Heroku.</p>
+            </div>
+        </a>
+        <a href="/copilot/index.html" class="project-item nationgame" target="_blank" rel="noopener noreferrer">
+            <div class="project-content">
+                <h3>🌎 Nation Game (2025)</h3>
+                <p>Turn-based strategy vs AI: manage resources, military, and diplomacy — coded exclusively by AI agents in 4 hours during a hackathon.</p>
+            </div>
+        </a>
+        <a href="https://docs.google.com/spreadsheets/d/13wl0oalAG3MvBfl46xcYxdtezW89yP2OklARoYQuH5s/edit?gid=0#gid=0" class="project-item pricecompare" target="_blank" rel="noopener noreferrer">
+            <div class="project-content">
+                <h3>🛒 Grocery Price Comparison (2023)</h3>
+                <p>Spreadsheet comparing grocery and gas prices across stores to find the cheapest, most efficient shopping plan.</p>
+            </div>
+        </a>
+    </div>
+
+    <section class="coming-soon">
+        <div class="container">
+            <h2>✨ Coming Soon</h2>
+            <div class="coming-grid">
+                <div class="coming-item">
+                    <h4>♟️ Chess Puzzle Bot</h4>
+                    <p>Discord bot that serves and solves tactical chess puzzles.</p>
+                </div>
+                <div class="coming-item">
+                    <h4>🎶 Live Sonification & Video Processing</h4>
+                    <p>Real-time audio-to-visual sonification and video data processing.</p>
+                </div>
+                <div class="coming-item">
+                    <h4>🎛️ Music Visualizer</h4>
+                    <p>Bass/treble-responsive visualizer inspired by Monstercat-style visuals.</p>
+                </div>
+                <div class="coming-item">
+                    <h4>🧠 Personality Quiz + PCA</h4>
+                    <p>Interactive quiz with PCA clustering to highlight personality groups.</p>
+                </div>
+                <div class="coming-item">
+                    <h4>🗺️ TSP Visualizer</h4>
+                    <p>Traveling Salesman demo showing route optimization algorithms.</p>
+                </div>
+                <div class="coming-item">
+                    <h4>📅 Minimal Event Calendar</h4>
+                    <p>Lightweight, minimal UI calendar for quick event management.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer placeholder -->
+    <div id="footer-placeholder"></div>
+
+    <script src="../assets/js/script.js"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+</body>
+
+</html>
