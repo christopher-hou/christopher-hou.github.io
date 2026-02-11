@@ -107,6 +107,41 @@ hr {
     background-repeat: no-repeat;
 }
 
+.project-item.puzzlebot {
+    background-image: url('../images/puzzlebot.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.project-item.musicproject {
+    background-image: url('../images/musicproject.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.project-item.musicvisualizer {
+    background-image: url('../images/musicvisualizer.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.project-item.personalityquiz {
+    background-image: url('../images/personalityquiz.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.project-item.calendar {
+    background-image: url('../images/calendar.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
 .project-item:hover {
     box-shadow: 0 0 15px rgba(0, 123, 255, 0.5);
     transform: translateY(-5px);
