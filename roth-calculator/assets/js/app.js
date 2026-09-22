@@ -1,7 +1,6 @@
 // @ts-check
-import {
-  project, paycheckBreakdown, breakEvenIsComparable, TAX_SAVINGS_TREATMENTS,
-} from './engine.js';
+import { project, paycheckBreakdown, TAX_SAVINGS_TREATMENTS } from './engine.js';
+import { breakEvenSentence, hasEmployerMatch } from './verdict-text.js';
 import { FIELDS, toDisplayValue, toModelValue } from './fields.js';
 import { decodeState, encodeState } from './state.js';
 import {
@@ -466,42 +465,13 @@ function renderVerdict(result) {
       + 'Switch the tax-savings assumption to investing the refund for a fair comparison.';
   }
 
-  const breakEven = result.breakEvenRetirementRate;
-  if (result.taxSavingsTreatment === 'spend') {
-    $('verdict-breakeven').innerHTML =
-      'Because the Traditional tax savings are spent rather than invested, Roth wins '
-      + 'at any retirement tax rate above 0%. Switch that assumption to compare fairly.';
-  } else if (!breakEvenIsComparable(result)) {
-    // The threshold assumes one shared rate; brackets mode gives the two
-    // options different effective rates, so quoting it here would compare
-    // unlike quantities -- and in a narrow band it contradicts the headline.
-    // Nothing needs forecasting in this mode anyway: both rates are derived.
-    const marginal = marginalRate(Math.max(0,
-      result.traditional.annualWithdrawal + inputs.otherRetirementIncome
-        - STANDARD_DEDUCTION_2026));
-    $('verdict-breakeven').innerHTML =
-      `Drawing ${formatCurrency(result.traditional.annualWithdrawal)} a year, Traditional `
-      + `withdrawals face an <strong>effective</strong> rate of `
-      + `<strong>${formatPercent(result.traditional.retirementRate, 1)}</strong> — not the `
-      + `${formatPercent(marginal, 0)} marginal rate, because the standard deduction and the low `
-      + `brackets fill first. A Roth saver pays `
-      + `<strong>${formatPercent(result.roth.retirementRate, 1)}</strong> on their employer match, `
-      + 'which is the only pre-tax money they hold. '
-      + `Today you pay <strong>${formatPercent(result.currentCombinedRate, 1)}</strong>. `
-      + '<em>Switch retirement tax to a flat rate to explore a break-even threshold.</em>';
-  } else {
-    $('verdict-breakeven').innerHTML =
-      `Traditional wins whenever your combined retirement tax rate comes in below `
-      + `<strong>${formatPercent(breakEven, 1)}</strong>. `
-      + `You entered <strong>${formatPercent(result.retirementCombinedRate, 1)}</strong>, `
-      + `against <strong>${formatPercent(result.currentCombinedRate, 1)}</strong> today.`;
-  }
+  $('verdict-breakeven').innerHTML = breakEvenSentence(result, inputs);
 }
 
 function renderCharts(result) {
   const v = view(result);
   const investing = result.taxSavingsTreatment === 'invest';
-  const hasMatch = result.roth.match.balance > 0;
+  const hasMatch = hasEmployerMatch(result);
 
   const bars = (tradOwn, tradMatch, side, rothOwn, rothMatch) => [
     {
@@ -684,7 +654,7 @@ function renderCompare(result) {
   const v = view(result);
   const investing = result.taxSavingsTreatment === 'invest';
   const grossUp = result.taxSavingsTreatment === 'gross-up';
-  const hasMatch = result.roth.match.balance > 0;
+  const hasMatch = hasEmployerMatch(result);
   const tradWins = result.winner === 'traditional';
   const rothWins = result.winner === 'roth';
   const brackets = result.retirementTaxMode === 'brackets';
@@ -765,7 +735,7 @@ function renderCompare(result) {
 function renderSchedule(result) {
   const investing = result.taxSavingsTreatment === 'invest';
   const grossUp = result.taxSavingsTreatment === 'gross-up';
-  const hasMatch = result.roth.match.balance > 0;
+  const hasMatch = hasEmployerMatch(result);
   const head = `<thead><tr>
     <th scope="col">Age</th><th scope="col">Income</th>
     <th scope="col">Your contribution</th>
