@@ -547,7 +547,14 @@ function noteFor(result) {
   const dollars = basis === 'real'
     ? "Shown in today's dollars, discounted for inflation."
     : `Shown in future dollars at age ${inputs.retirementAge}, not adjusted for inflation.`;
-  return `${dollars} ${treatment?.detail ?? ''}`;
+  // This chart compares two wrappers for one fixed contribution. It is not a
+  // measure of whether you are better off, and saying so here heads off the
+  // reading that a higher tax rate grows your wealth.
+  const scope = 'This compares two ways of making the same contribution \u2014 it is not a '
+    + 'measure of your overall wealth, which falls as tax rises. Your current tax rate does '
+    + 'not appear in the Roth calculation at all, which is why only the Traditional side '
+    + 'moves when you change it.';
+  return `${dollars} ${treatment?.detail ?? ''} ${scope}`;
 }
 
 function swatch(item) {
@@ -679,6 +686,10 @@ function renderCaveats(result) {
     'No modeling of required minimum distributions, Medicare IRMAA surcharges, the saver\u2019s '
       + 'credit, or early-withdrawal penalties.',
     'Returns are assumed steady. Real markets are not, and sequence-of-returns risk is not modeled.',
+    'The comparison prices only the <strong>incremental</strong> cost of contributing, never '
+      + 'your baseline tax bill. A higher current tax rate therefore widens Traditional\u2019s '
+      + 'lead without anything on the chart getting worse \u2014 but you are poorer overall, '
+      + 'which the take-home pay row above shows.',
   ];
 
   if (result.retirementTaxMode === 'brackets') {
@@ -746,6 +757,16 @@ function renderPaycheck(result) {
     ]);
   }
 
+  // Without these two rows the panel implies a higher tax rate leaves you
+  // richer, because nothing else on screen ever shows the tax bill itself.
+  rows.push(['Income tax you actually pay', out(per.tax.trad), out(per.tax.roth), 'row-rule']);
+  rows.push([
+    'Take-home pay left to live on',
+    $$(per.takeHome.trad),
+    $$(per.takeHome.roth),
+    'row-muted',
+  ]);
+
   const head = `<thead><tr><th scope="col">${label.charAt(0).toUpperCase()}${label.slice(1)}</th>
     <th scope="col">Traditional</th><th scope="col">Roth</th></tr></thead>`;
   const body = rows.map(([text, a, c, cls]) =>
@@ -755,6 +776,8 @@ function renderPaycheck(result) {
     <td>${$$(per.totalCost.trad)}</td><td>${$$(per.totalCost.roth)}</td></tr>`;
 
   $('paycheck-table').innerHTML = `${head}<tbody>${body}${total}</tbody>`;
+
+  renderRateWarning(b);
 
   if (b.contribution.roth === 0) {
     $('paycheck-note').textContent = 'Set a contribution above 0% to see the breakdown.';
@@ -774,6 +797,51 @@ function renderPaycheck(result) {
       + 'either way; what differs is the tax on the rest of your pay, which comes out of '
       + 'take-home rather than out of the account.';
   }
+}
+
+/**
+ * A high entered rate makes Traditional look better without anything on
+ * screen getting worse, which reads as "more tax, more money." That only
+ * happens when the entered rate outruns what the brackets actually refund,
+ * so say so where it is visible.
+ * @param {ReturnType<typeof paycheckBreakdown>} b
+ */
+function renderRateWarning(b) {
+  const box = $('rate-warning');
+  if (!box) return;
+
+  if (b.unaffordable) {
+    box.hidden = false;
+    box.innerHTML = '<strong>This plan costs more than you earn.</strong> Tax plus your '
+      + 'contribution exceed your gross pay, so the projection below is not achievable.';
+    return;
+  }
+
+  if (b.phantomRefund && b.treatment === 'invest') {
+    box.hidden = false;
+    box.innerHTML =
+      `<strong>Your tax rate is higher than your income supports.</strong> At `
+      + `${formatCurrency(b.gross)} the 2026 brackets refund about `
+      + `${formatCurrency(b.actualTaxSaving)} a year on this contribution, but a `
+      + `${formatPercent(b.rate, 1)} rate sweeps ${formatCurrency(b.sideDeposit.trad)} into the `
+      + `side account — ${formatCurrency(b.phantomAmount)} of which tax never actually gives `
+      + `you back. That flatters Traditional. Use <em>Estimate</em> to set a rate of about `
+      + `${formatPercent(b.impliedMarginalRate, 1)}.`;
+    return;
+  }
+
+  if (b.rateMismatch) {
+    box.hidden = false;
+    box.innerHTML =
+      `<strong>Check your current tax rate.</strong> At ${formatCurrency(b.gross)} the 2026 `
+      + `brackets imply about ${formatPercent(b.impliedMarginalRate, 1)} combined, but you have `
+      + `entered ${formatPercent(b.rate, 1)}. Use <em>Estimate</em> next to the federal rate to `
+      + 'match them up.';
+    return;
+  }
+
+  box.hidden = true;
+  box.innerHTML = '';
 }
 
 function renderFairness(result) {

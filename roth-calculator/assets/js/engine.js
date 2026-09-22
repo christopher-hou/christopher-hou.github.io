@@ -1,6 +1,6 @@
 // @ts-check
-import { deferralLimitForAge, incrementalEffectiveRate } from './tax.js';
-import { DEFERRAL_LIMIT_2026 } from './tax-data.js';
+import { deferralLimitForAge, incrementalEffectiveRate, federalTaxOwed } from './tax.js';
+import { DEFERRAL_LIMIT_2026, STANDARD_DEDUCTION_2026 } from './tax-data.js';
 
 /**
  * @typedef {Object} Inputs
@@ -426,6 +426,38 @@ export function paycheckBreakdown(inputs, result) {
   };
 
   const costGap = Math.abs(totalCost.roth - totalCost.trad);
+
+  // Actual tax and take-home pay, from the real brackets rather than from the
+  // entered marginal rate. Without this the comparison silently implies that
+  // a higher tax rate leaves you better off: the Traditional stack grows on
+  // the strength of a bigger refund while nothing ever shows the larger tax
+  // bill that produced it.
+  const stateRate = Math.max(0, num(inputs.currentStateRate));
+  /** @param {number} wages */
+  const taxOn = (wages) => federalTaxOwed(Math.max(0, wages - STANDARD_DEDUCTION_2026))
+    + Math.max(0, wages) * stateRate;
+  const tax = { trad: taxOn(taxableWages.trad), roth: taxOn(taxableWages.roth) };
+  const takeHome = {
+    trad: gross - tradContribution - tax.trad - sideDeposit.trad,
+    roth: gross - rothContribution - tax.roth - sideDeposit.roth,
+  };
+
+  // The rate the brackets actually imply on the slice being sheltered. If the
+  // entered rate is far from this, "equal out-of-pocket" stops being equal
+  // and the whole comparison quietly tilts.
+  const impliedMarginalRate = tradContribution > 0
+    ? (taxOn(gross) - taxOn(gross - tradContribution)) / tradContribution
+    : marginalOn(gross, stateRate);
+  const rateMismatch = Math.abs(impliedMarginalRate - rate) > 0.03;
+
+  // The deduction is only worth what the brackets actually refund. If the
+  // entered rate exceeds that, the side account is being funded with money
+  // that does not exist, and Traditional is flattered by the difference.
+  const actualTaxSaving = tax.roth - tax.trad;
+  const phantomAmount = Math.max(0, sideDeposit.trad - actualTaxSaving);
+  const phantomRefund = phantomAmount > 1;
+  const unaffordable = takeHome.trad < 0 || takeHome.roth < 0;
+
   const periodsPerYear = result.periodsPerYear;
   /** @param {Record<string, number>} pair */
   const perPeriodOf = (pair) => ({
@@ -437,6 +469,14 @@ export function paycheckBreakdown(inputs, result) {
     gross,
     rate,
     treatment,
+    tax,
+    takeHome,
+    impliedMarginalRate,
+    rateMismatch,
+    actualTaxSaving,
+    phantomAmount,
+    phantomRefund,
+    unaffordable,
     periodsPerYear,
     capped: first ? first.capped : false,
     contribution: { trad: tradContribution, roth: rothContribution },
@@ -450,6 +490,8 @@ export function paycheckBreakdown(inputs, result) {
     equalized: costGap < 0.01,
     perPeriod: {
       gross: gross / periodsPerYear,
+      tax: perPeriodOf(tax),
+      takeHome: perPeriodOf(takeHome),
       contribution: perPeriodOf(contributionPair(tradContribution, rothContribution)),
       extraTax: perPeriodOf(extraTax),
       takeHomeCut: perPeriodOf(takeHomeCut),
@@ -462,6 +504,17 @@ export function paycheckBreakdown(inputs, result) {
 /** @param {number} trad @param {number} roth */
 function contributionPair(trad, roth) {
   return { trad, roth };
+}
+
+/**
+ * Combined marginal rate implied by the brackets at a given wage level.
+ * @param {number} wages
+ * @param {number} stateRate
+ */
+function marginalOn(wages, stateRate) {
+  const probe = 100;
+  const taxAt = (w) => federalTaxOwed(Math.max(0, w - STANDARD_DEDUCTION_2026)) + Math.max(0, w) * stateRate;
+  return (taxAt(wages + probe) - taxAt(wages)) / probe;
 }
 
 /**
