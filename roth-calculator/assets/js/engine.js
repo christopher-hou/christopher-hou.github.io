@@ -162,13 +162,15 @@ export function project(inputs) {
   const currentTaxMode = CURRENT_TAX_MODES.some((m) => m.value === inputs.currentTaxMode)
     ? /** @type {'brackets'|'flat'} */ (inputs.currentTaxMode)
     : 'brackets';
-  // Deriving this from income is what makes the comparison safe: a typed rate
-  // the income cannot support inflates the Traditional tax saving, which used
-  // to make a higher tax rate look like it left you wealthier.
-  const currentFederalRate = currentTaxMode === 'brackets'
-    ? deductionRateOnSlice(income, income * contributionPercent)
-    : num(inputs.currentFederalRate);
-  const currentRate = currentFederalRate + num(inputs.currentStateRate);
+  const currentStateRate = num(inputs.currentStateRate);
+  const flatFederalRate = num(inputs.currentFederalRate);
+  // Valued per year inside the loop, because a deduction is worth whatever
+  // that year's income and contribution actually remove from the tax bill.
+  // Freezing year one's rate badly understates the saving for anyone whose
+  // pay rises through the brackets.
+  const deductionRateFor = (yearIncome, contribution) => (currentTaxMode === 'brackets'
+    ? deductionRateOnSlice(yearIncome, contribution)
+    : flatFederalRate) + currentStateRate;
   const retirementStateRate = num(inputs.retirementStateRate);
   const withdrawalRate = Math.max(0, num(inputs.withdrawalRate, 0.04));
   const otherRetirementIncome = Math.max(0, num(inputs.otherRetirementIncome));
@@ -181,12 +183,6 @@ export function project(inputs) {
   // Geometric per-period rate, so a stated annual return is honored exactly
   // no matter how finely the year is sliced by pay frequency.
   const periodRate = Math.pow(1 + rateOfReturn, 1 / periodsPerYear) - 1;
-
-  // Under gross-up, the Traditional side defers more so that both cost
-  // identical take-home pay.
-  const grossUpFactor = taxSavingsTreatment === 'gross-up' && currentRate < 1
-    ? 1 / (1 - currentRate)
-    : 1;
 
   let rothBalance = 0;
   let tradBalance = 0;
@@ -204,6 +200,8 @@ export function project(inputs) {
   let realRothContributions = 0;
   let realTradContributions = 0;
   let realSideBasis = 0;
+  let realTradTakeHomeCost = 0;
+  let tradTakeHomeCost = 0;
   let everCapped = false;
   /** @type {Array<Object>} */
   const schedule = [];
@@ -218,6 +216,17 @@ export function project(inputs) {
       : Infinity;
 
     const rothContribution = Math.min(desired, limit);
+    // The rate is measured on the contribution actually made, so an IRS cap
+    // shrinks the slice being valued rather than leaving a stale rate behind.
+    const deductionRate = deductionRateFor(yearIncome, rothContribution);
+    // Under gross-up the Traditional side defers more so both cost identical
+    // take-home pay. The larger slice could in principle be worth a slightly
+    // different rate; valuing it at the base slice's rate is a deliberate
+    // one-step approximation rather than an iterative solve.
+    const grossUpFactor = taxSavingsTreatment === 'gross-up' && deductionRate < 1
+      ? 1 / (1 - deductionRate)
+      : 1;
+
     const tradContribution = Math.min(desired * grossUpFactor, limit);
     const capped = capAtLimit && (desired > limit || desired * grossUpFactor > limit);
     if (capped) everCapped = true;
@@ -234,7 +243,7 @@ export function project(inputs) {
     const tradMatchPerPeriod = tradMatch / periodsPerYear;
     // The refund is only invested under the 'invest' treatment.
     const sidePerPeriod = taxSavingsTreatment === 'invest'
-      ? rothPerPeriod * currentRate
+      ? rothPerPeriod * deductionRate
       : 0;
 
     for (let p = 0; p < periodsPerYear; p++) {
@@ -249,11 +258,13 @@ export function project(inputs) {
     totalTradContributions += tradContribution;
     totalRothMatch += rothMatch;
     totalTradMatch += tradMatch;
+    tradTakeHomeCost += tradContribution * (1 - deductionRate);
 
     const yearDeflator = Math.pow(1 + inflation, y + 1);
     realRothContributions += rothContribution / yearDeflator;
     realTradContributions += tradContribution / yearDeflator;
     realSideBasis += (sidePerPeriod * periodsPerYear) / yearDeflator;
+    realTradTakeHomeCost += (tradContribution * (1 - deductionRate)) / yearDeflator;
 
     schedule.push({
       year: y + 1,
@@ -264,6 +275,7 @@ export function project(inputs) {
       tradContribution,
       rothMatch,
       tradMatch,
+      deductionRate,
       capped,
       limit: Number.isFinite(limit) ? limit : null,
       rothBalance,
@@ -273,6 +285,14 @@ export function project(inputs) {
       sideBalance,
     });
   }
+
+  // Year one's rate is the one you face today, so it is what the UI shows and
+  // what the paycheck walkthrough is built from.
+  const firstYearRate = schedule.length
+    ? schedule[0].deductionRate
+    : deductionRateFor(income, income * contributionPercent);
+  const currentFederalRate = firstYearRate - currentStateRate;
+  const currentRate = firstYearRate;
 
   const deflator = Math.pow(1 + inflation, years);
   /** @param {number} v */
@@ -362,7 +382,7 @@ export function project(inputs) {
       total: tradTotal,
       // Pre-tax contributions cost less take-home; the difference either
       // funds the side account, buys a larger deferral, or is spent.
-      outOfPocket: totalTradContributions * (1 - currentRate) + sideBasis,
+      outOfPocket: tradTakeHomeCost + sideBasis,
       contributions: totalTradContributions,
       effectiveFederalRate: tradEffectiveFederal,
       retirementRate: tradRetirementRate,
@@ -391,7 +411,7 @@ export function project(inputs) {
         afterTax: real(tradAfterTax),
         preTaxBalance: real(tradPreTax),
         total: real(tradTotal),
-        outOfPocket: realTradContributions * (1 - currentRate) + realSideBasis,
+        outOfPocket: realTradTakeHomeCost + realSideBasis,
         contributions: realTradContributions,
         match: { balance: real(tradMatchBalance), afterTax: real(tradMatchAfterTax) },
         side: {

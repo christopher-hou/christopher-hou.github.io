@@ -307,11 +307,15 @@ function hintFor(key, result) {
       return inputs.otherRetirementIncome > 0
         ? 'Fills the low brackets first, taxing withdrawals higher'
         : 'Social Security, pension or similar (today\u2019s dollars)';
-    case 'currentTaxMode':
-      return result.currentTaxMode === 'brackets'
-        ? `Your deduction is worth ${formatPercent(result.currentFederalRate, 1)} federal`
-          + ` — ${formatPercent(result.currentCombinedRate, 1)} with state`
-        : '';
+    case 'currentTaxMode': {
+      if (result.currentTaxMode !== 'brackets' || !result.schedule.length) return '';
+      const first = result.schedule[0].deductionRate;
+      const last = result.schedule.at(-1).deductionRate;
+      return Math.abs(last - first) < 0.005
+        ? `Your deduction is worth ${formatPercent(first, 1)} combined`
+        : `Worth ${formatPercent(first, 1)} now, rising to ${formatPercent(last, 1)} `
+          + 'by retirement as your pay grows';
+    }
     case 'currentFederalRate':
       return bracketLabel(inputs.currentFederalRate);
     case 'retirementFederalRate':
@@ -518,6 +522,7 @@ function renderCharts(result) {
 
   $('chart-note').textContent = noteFor(result);
   renderTakeHomeStrip(result);
+  renderEconWarning(result);
 
   const deflate = (value, year) => (basis === 'real'
     ? value / Math.pow(1 + inputs.inflation, year)
@@ -575,6 +580,47 @@ function renderTakeHomeStrip(result) {
       + `<strong>${formatCurrency(b.takeHome.trad)}</strong>`
       + `<span class="strip-note">Traditional vs `
       + `${formatCurrency(b.takeHome.roth)} Roth</span>`;
+}
+
+/**
+ * Wage growth and inflation are independent inputs, so they can be set to an
+ * economy that does not make sense. The usual symptom is that results stop
+ * responding to inflation at all, because the real balance has collapsed far
+ * enough that withdrawals fall inside the standard deduction.
+ * @param {ReturnType<typeof project>} result
+ */
+function renderEconWarning(result) {
+  const box = $('econ-warning');
+  if (!box) return;
+  const messages = [];
+
+  const wageGap = inputs.inflation - inputs.wageGrowth;
+  if (wageGap > 0.005 && result.years > 0) {
+    const finalReal = result.schedule.at(-1).income / result.real.deflator;
+    messages.push(
+      `<strong>Your pay is set to fall behind inflation.</strong> Wages grow `
+      + `${formatPercent(inputs.wageGrowth, 1)} a year against `
+      + `${formatPercent(inputs.inflation, 1)} inflation, so by retirement your salary is worth `
+      + `${formatCurrency(finalReal)} in today's money, down from `
+      + `${formatCurrency(inputs.income)}. That shrinks every real figure below, and is usually `
+      + 'not what you meant — try setting wage growth at or above inflation.',
+    );
+  }
+
+  if (result.retirementTaxMode === 'brackets'
+      && result.traditional.effectiveFederalRate === 0
+      && result.traditional.preTaxBalance > 0) {
+    messages.push(
+      `<strong>Your projected withdrawals fall below the standard deduction.</strong> `
+      + `Drawing ${formatCurrency(result.traditional.annualWithdrawal)} a year in today's money `
+      + `is under the ${formatCurrency(16100)} standard deduction, so federal tax works out to `
+      + 'zero and results stop responding to further changes. That is arithmetic, not a '
+      + 'forecast — it means the assumptions have pushed your real balance very low.',
+    );
+  }
+
+  box.hidden = messages.length === 0;
+  box.innerHTML = messages.join('<br><br>');
 }
 
 function noteFor(result) {
