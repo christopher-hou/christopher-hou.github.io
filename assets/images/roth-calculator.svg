@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img"
+     aria-label="Roth versus Traditional 401(k) calculator">
+  <rect width="400" height="400" fill="#f4f4f6"/>
+
+  <text x="40" y="66" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+        font-size="30" font-weight="600" fill="#18181b">401(k)</text>
+  <text x="40" y="96" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+        font-size="21" fill="#6b6b75">Roth vs Traditional</text>
+
+  <g stroke="#dcdce1" stroke-width="2">
+    <line x1="40" y1="180" x2="360" y2="180"/>
+    <line x1="40" y1="240" x2="360" y2="240"/>
+    <line x1="40" y1="300" x2="360" y2="300"/>
+  </g>
+
+  <!-- Stacked Traditional bar: deferral plus the taxable side account -->
+  <rect x="66" y="196" width="52" height="144" fill="#b8430d"/>
+  <rect x="66" y="150" width="52" height="46" fill="#e8a882"/>
+  <rect x="136" y="186" width="52" height="154" fill="#1e3a5f"/>
+
+  <rect x="226" y="248" width="52" height="92" fill="#b8430d"/>
+  <rect x="226" y="222" width="52" height="26" fill="#e8a882"/>
+  <rect x="296" y="186" width="52" height="154" fill="#1e3a5f"/>
+
+  <line x1="40" y1="340" x2="360" y2="340" stroke="#a9a9b2" stroke-width="2.5"/>
+
+  <text x="127" y="372" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+        font-size="19" fill="#6b6b75">Pre-tax</text>
+  <text x="287" y="372" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+        font-size="19" fill="#6b6b75">After tax</text>
+</svg>
