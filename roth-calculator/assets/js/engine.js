@@ -588,6 +588,25 @@ function marginalOn(wages, stateRate) {
 }
 
 /**
+ * Whether `breakEvenRetirementRate` can be compared against the rate a saver
+ * actually faces.
+ *
+ * The threshold is derived by assuming a single rate `t` on both sides -- the
+ * assumption that makes the employer match cancel, and the reason the rate
+ * genuinely ties. Brackets mode deliberately breaks it: the Roth saver's only
+ * pre-tax money is the match, so their withdrawal is smaller and their
+ * effective rate lower than the Traditional saver's. Holding the threshold up
+ * against either of those two rates compares unlike quantities, and around
+ * $8k-$13k of other retirement income it contradicts the verdict outright.
+ *
+ * @param {ReturnType<typeof project>} result
+ * @returns {boolean}
+ */
+export function breakEvenIsComparable(result) {
+  return result.retirementTaxMode === 'flat';
+}
+
+/**
  * @param {Inputs} inputs
  * @returns {'invest'|'gross-up'|'spend'}
  */

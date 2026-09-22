@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { project, defaultInputs } from '../assets/js/engine.js';
+import { project, defaultInputs, breakEvenIsComparable } from '../assets/js/engine.js';
 
 /**
  * When a single retirement rate `t` applies to all of a person's pre-tax
@@ -95,5 +95,52 @@ describe('break-even under each tax-savings treatment', () => {
     };
     const r = project(base);
     expect(r.breakEvenRetirementRate).toBeCloseTo(r.currentCombinedRate, 4);
+  });
+});
+
+describe('the threshold is only quoted where it is comparable', () => {
+  // The break-even assumes a single shared retirement rate on both sides --
+  // that assumption is exactly why the match cancels and why it ties.
+  // Brackets mode deliberately gives the two options DIFFERENT effective
+  // rates, so `traditional.retirementRate` is not the `t` the threshold is a
+  // threshold for, and comparing them is a category error.
+  it('is comparable in flat mode and not in brackets mode', () => {
+    expect(breakEvenIsComparable(project({
+      ...defaultInputs(), retirementTaxMode: 'flat',
+    }))).toBe(true);
+    expect(breakEvenIsComparable(project({
+      ...defaultInputs(), retirementTaxMode: 'brackets',
+    }))).toBe(false);
+  });
+
+  it('predicts the winner at every rate, wherever it is quoted', () => {
+    for (let t = 0; t <= 0.45; t += 0.025) {
+      const r = project({
+        ...defaultInputs(), retirementTaxMode: 'flat',
+        retirementFederalRate: t, retirementStateRate: 0,
+      });
+      if (!breakEvenIsComparable(r) || r.winner === 'tie') continue;
+      const predicted = r.traditional.retirementRate < r.breakEvenRetirementRate
+        ? 'traditional' : 'roth';
+      expect(predicted, `rate ${(t * 100).toFixed(1)}%`).toBe(r.winner);
+    }
+  });
+
+  it('would contradict the verdict in brackets mode, which is why it is withheld', () => {
+    // Documents the defect rather than asserting it away: around $8k-$13k of
+    // other retirement income the comparison flips while the verdict does not.
+    const contradictions = [];
+    for (let other = 0; other <= 30000; other += 1250) {
+      const r = project({ ...defaultInputs(), otherRetirementIncome: other });
+      const predicted = r.traditional.retirementRate < r.breakEvenRetirementRate
+        ? 'traditional' : 'roth';
+      if (predicted !== r.winner) contradictions.push(other);
+    }
+    expect(contradictions.length).toBeGreaterThan(0);
+    for (const other of contradictions) {
+      expect(breakEvenIsComparable(project({
+        ...defaultInputs(), otherRetirementIncome: other,
+      }))).toBe(false);
+    }
   });
 });

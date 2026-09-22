@@ -33,9 +33,11 @@ cd ~/Documents/personal/christopher-hou.github.io/roth-calculator && npm test
 
 (`npm install` once first.)
 
-275 tests covering the projection math, the 2026 bracket tables, employer
-match, year-by-year bracket-derived rates, take-home pay, URL state, and the
-chart scaling. `npm run test:watch` reruns on change.
+The suite covers the projection math and its invariants, the 2026 bracket
+tables, the employer match under both tax modes, year-by-year bracket-derived
+rates, take-home pay, URL state round-tripping, and chart scaling and
+tweening. Several tests exist specifically to pin down behaviour that a
+previous version got wrong, and are commented with what they caught. `npm run test:watch` reruns on change.
 
 Vitest is a **dev-only** dependency and nothing in `node_modules` reaches the
 browser. The `package.json` and `test/` folder live in this repository beside

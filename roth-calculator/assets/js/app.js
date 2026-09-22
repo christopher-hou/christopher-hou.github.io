@@ -1,5 +1,7 @@
 // @ts-check
-import { project, paycheckBreakdown, TAX_SAVINGS_TREATMENTS } from './engine.js';
+import {
+  project, paycheckBreakdown, breakEvenIsComparable, TAX_SAVINGS_TREATMENTS,
+} from './engine.js';
 import { FIELDS, toDisplayValue, toModelValue } from './fields.js';
 import { decodeState, encodeState } from './state.js';
 import {
@@ -469,17 +471,24 @@ function renderVerdict(result) {
     $('verdict-breakeven').innerHTML =
       'Because the Traditional tax savings are spent rather than invested, Roth wins '
       + 'at any retirement tax rate above 0%. Switch that assumption to compare fairly.';
-  } else if (result.retirementTaxMode === 'brackets') {
-    // Both sides of this comparison are derived rather than guessed, which is
-    // the whole point of the bracket mode.
+  } else if (!breakEvenIsComparable(result)) {
+    // The threshold assumes one shared rate; brackets mode gives the two
+    // options different effective rates, so quoting it here would compare
+    // unlike quantities -- and in a narrow band it contradicts the headline.
+    // Nothing needs forecasting in this mode anyway: both rates are derived.
+    const marginal = marginalRate(Math.max(0,
+      result.traditional.annualWithdrawal + inputs.otherRetirementIncome
+        - STANDARD_DEDUCTION_2026));
     $('verdict-breakeven').innerHTML =
-      `Traditional wins below a combined retirement rate of <strong>${formatPercent(breakEven, 1)}</strong>. `
-      + `Drawing ${formatCurrency(result.traditional.annualWithdrawal)} a year puts you at an `
-      + `<strong>effective</strong> rate of <strong>${formatPercent(result.traditional.retirementRate, 1)}</strong> `
-      + `— not the ${formatPercent(marginalRate(Math.max(0,
-        result.traditional.annualWithdrawal + inputs.otherRetirementIncome - STANDARD_DEDUCTION_2026)), 0)} `
-      + `marginal rate, because the standard deduction and the low brackets fill first. `
-      + `Today you pay <strong>${formatPercent(result.currentCombinedRate, 1)}</strong>.`;
+      `Drawing ${formatCurrency(result.traditional.annualWithdrawal)} a year, Traditional `
+      + `withdrawals face an <strong>effective</strong> rate of `
+      + `<strong>${formatPercent(result.traditional.retirementRate, 1)}</strong> — not the `
+      + `${formatPercent(marginal, 0)} marginal rate, because the standard deduction and the low `
+      + `brackets fill first. A Roth saver pays `
+      + `<strong>${formatPercent(result.roth.retirementRate, 1)}</strong> on their employer match, `
+      + 'which is the only pre-tax money they hold. '
+      + `Today you pay <strong>${formatPercent(result.currentCombinedRate, 1)}</strong>. `
+      + '<em>Switch retirement tax to a flat rate to explore a break-even threshold.</em>';
   } else {
     $('verdict-breakeven').innerHTML =
       `Traditional wins whenever your combined retirement tax rate comes in below `
@@ -547,8 +556,9 @@ function renderCharts(result) {
   const emptyMessage = result.years === 0
     ? 'Nothing to chart yet — set a retirement age above your current age.'
     : 'Nothing to chart yet — set a contribution above 0%.';
-  $('bar-chart').innerHTML = hasData ? $('bar-chart').innerHTML
-    : `<p class="chart-empty">${emptyMessage}</p>`;
+  // Only touched when there is nothing to draw; the populated case is left
+  // alone so the tween's own nodes survive.
+  if (!hasData) $('bar-chart').innerHTML = `<p class="chart-empty">${emptyMessage}</p>`;
   renderTakeHomeStrip(result);
   renderEconWarning(result);
 

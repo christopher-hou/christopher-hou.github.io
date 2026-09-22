@@ -130,3 +130,22 @@ describe('scenarios a user would actually test', () => {
     expect(a.difference).toBe(b.difference);
   });
 });
+
+describe('the favicon is self-contained', () => {
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+
+  it('declares an icon', () => {
+    expect(html).toMatch(/<link[^>]+rel="icon"/);
+  });
+
+  it('does not reach outside the folder for it, so the app stays portable', () => {
+    const icons = [...html.matchAll(/<link[^>]+rel="[^"]*icon[^"]*"[^>]*>/g)].map((m) => m[0]);
+    expect(icons.length).toBeGreaterThan(0);
+    for (const tag of icons) {
+      const href = /href="([^"]+)"/.exec(tag)?.[1];
+      expect(href, tag).toBeTruthy();
+      expect(href, `${href} escapes the app folder`).not.toMatch(/^\.\.\//);
+      expect(href, `${href} is not relative`).not.toMatch(/^(\/|https?:)/);
+    }
+  });
+});

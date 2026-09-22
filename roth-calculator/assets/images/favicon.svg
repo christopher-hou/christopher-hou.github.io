@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img"
+     aria-label="Roth versus Traditional 401(k) calculator">
+  <rect width="32" height="32" rx="6" fill="#1e3a5f"/>
+  <!-- Two bars, the calculator's own pairing. Kept to three shapes so it
+       stays legible at 16px. -->
+  <rect x="7"  y="11" width="6" height="14" rx="1" fill="#f08a4b"/>
+  <rect x="7"  y="7"  width="6" height="4"  rx="1" fill="#f6bd93"/>
+  <rect x="19" y="14" width="6" height="11" rx="1" fill="#8fb4dd"/>
+</svg>
