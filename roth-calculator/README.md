@@ -33,12 +33,14 @@ cd ~/Documents/personal/christopher-hou.github.io/roth-calculator && npm test
 
 (`npm install` once first.)
 
-251 tests covering the projection math, the 2026 bracket tables, employer
+275 tests covering the projection math, the 2026 bracket tables, employer
 match, year-by-year bracket-derived rates, take-home pay, URL state, and the
 chart scaling. `npm run test:watch` reruns on change.
 
-Vitest is a **dev-only** dependency. Nothing in `node_modules` ships to the
-browser, and the deployed site has no `package.json` at all.
+Vitest is a **dev-only** dependency and nothing in `node_modules` reaches the
+browser. The `package.json` and `test/` folder live in this repository beside
+the app but are never served as part of it — see
+[Deployment](#deployment) below.
 
 ## What it models
 

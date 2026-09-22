@@ -135,10 +135,15 @@ function num(v, fallback = 0) {
  * Traditional scenario either sweeps the difference into a taxable side
  * account or defers a larger amount. See TAX_SAVINGS_TREATMENTS.
  *
- * Employer match note: the match is always pre-tax, even for a Roth saver,
- * so it is modeled as a separate traditional sub-account on BOTH sides. It
- * cannot change which option wins, but it does add taxable retirement income
- * to the Roth scenario, which matters once tax is computed from brackets.
+ * Employer match note: the match is always pre-tax, even for a Roth saver, so
+ * it is modeled as a separate traditional sub-account on BOTH sides. It does
+ * not move the break-even rate -- at a single shared rate it cancels
+ * algebraically -- but it does change the size of the gap at any given rate,
+ * because it gives the Roth saver taxable retirement income of their own.
+ * Their withdrawal is smaller, so it fills the low brackets the Traditional
+ * saver has already consumed, and the two end up at different effective
+ * rates. Under flat mode that difference vanishes and the match cancels
+ * entirely.
  *
  * @param {Inputs} inputs
  */
@@ -338,13 +343,21 @@ export function project(inputs) {
   const tradMatchAfterTax = tradMatchBalance * (1 - tradRetirementRate);
   const tradTotal = tradAfterTax + tradMatchAfterTax + sideAfterTax;
 
-  // The retirement rate that would tie the two. It must be solved across ALL
-  // of the Traditional saver's pre-tax money -- own balance and employer
-  // match alike -- because both are taxed at the very rate being solved for.
-  // Holding the match's after-tax value fixed overstated the threshold by
-  // nearly three points under the shipped defaults.
-  const breakEvenRetirementRate = tradPreTax > 0
-    ? Math.max(0, 1 - (rothTotal - sideAfterTax) / tradPreTax)
+  // The retirement rate at which the two genuinely tie.
+  //
+  // A reader asking "what if my retirement rate turns out to be t?" means a
+  // single t applied to all of their pre-tax withdrawals. Under that reading
+  // the employer match CANCELS, because it is the same balance taxed at the
+  // same rate on both sides:
+  //
+  //   roth(t) = rothBalance + matchBalance(1 - t)
+  //   trad(t) = (tradBalance + matchBalance)(1 - t) + sideAfterTax
+  //
+  // The matchBalance(1 - t) term drops out, leaving the employee's own
+  // deferral against the side account. Including the match on one side only
+  // -- in either direction -- yields a rate that does not actually tie.
+  const breakEvenRetirementRate = tradBalance > 0
+    ? Math.max(0, 1 - (rothBalance - sideAfterTax) / tradBalance)
     : 0;
 
   const difference = Math.abs(rothTotal - tradTotal);

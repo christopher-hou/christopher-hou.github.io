@@ -51,3 +51,35 @@ describe('svgPath', () => {
     expect(svgPath([[0.12345, 9.87654]])).toBe('M 0.12 9.88');
   });
 });
+
+describe('empty state', () => {
+  // niceScale floors a non-positive maximum at 1, whose ticks render through
+  // formatCompactCurrency as "$0 $0 $0 $1 $1 $1". There is nothing to draw.
+  const stubContainer = () => ({
+    textContent: 'stale',
+    appendChild() { throw new Error('should not draw anything'); },
+  });
+
+  it('draws nothing when every bar is zero', async () => {
+    const { renderBarChart } = await import('../assets/js/chart.js');
+    const container = stubContainer();
+    expect(() => renderBarChart(/** @type {any} */ (container), {
+      title: 'empty',
+      groups: [{ label: 'At retirement', bars: [
+        { name: 'Traditional', segments: [{ value: 0, tone: 'trad' }] },
+        { name: 'Roth', segments: [{ value: 0, tone: 'roth' }] },
+      ] }],
+    })).not.toThrow();
+    expect(container.textContent).toBe('');
+  });
+
+  it('draws nothing when every line point is zero', async () => {
+    const { renderLineChart } = await import('../assets/js/chart.js');
+    const container = stubContainer();
+    expect(() => renderLineChart(/** @type {any} */ (container), {
+      title: 'empty', xLabel: 'Age',
+      series: [{ name: 'Roth', tone: 'roth', points: [{ x: 30, y: 0 }, { x: 31, y: 0 }] }],
+    })).not.toThrow();
+    expect(container.textContent).toBe('');
+  });
+});

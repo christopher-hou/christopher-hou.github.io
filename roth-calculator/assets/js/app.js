@@ -458,8 +458,8 @@ function renderVerdict(result) {
     warning.hidden = fairness.equalized || result.taxSavingsTreatment === 'spend';
     warning.innerHTML = warning.hidden ? '' :
       `<strong>Treat this verdict with caution.</strong> The two options do not cost the same: `
-      + `Traditional is ${formatCurrency(fairness.costGap)} a year cheaper because the IRS limit `
-      + `has capped both contributions at ${formatCurrency(fairness.contribution.trad)}, so `
+      + `Traditional is ${formatCurrency(fairness.costGap)} a year cheaper. The IRS limit has `
+      + `capped the Traditional contribution at ${formatCurrency(fairness.contribution.trad)}, so `
       + `grossing up cannot go any further. That unspent money is not modelled anywhere. `
       + 'Switch the tax-savings assumption to investing the refund for a fair comparison.';
   }
@@ -532,15 +532,23 @@ function renderCharts(result) {
     ],
   });
 
+  // With nothing to draw, the chart suppresses itself; a legend and a note
+  // describing an absent chart would just be debris.
+  const hasData = result.traditional.total > 0 || result.roth.total > 0;
   const legend = [
     { label: 'Traditional 401(k)', tone: 'trad' },
     hasMatch ? { label: 'Employer match (pre-tax in both)', tone: 'match' } : null,
     investing ? { label: 'Taxable side account', tone: 'side' } : null,
     { label: 'Roth 401(k)', tone: 'roth' },
   ].filter(Boolean);
-  $('chart-legend').innerHTML = legend.map(swatch).join('');
-
-  $('chart-note').textContent = noteFor(result);
+  $('chart-legend').innerHTML = hasData ? legend.map(swatch).join('') : '';
+  $('chart-note').textContent = hasData ? noteFor(result) : '';
+  $('line-legend').innerHTML = '';
+  const emptyMessage = result.years === 0
+    ? 'Nothing to chart yet — set a retirement age above your current age.'
+    : 'Nothing to chart yet — set a contribution above 0%.';
+  $('bar-chart').innerHTML = hasData ? $('bar-chart').innerHTML
+    : `<p class="chart-empty">${emptyMessage}</p>`;
   renderTakeHomeStrip(result);
   renderEconWarning(result);
 
@@ -570,10 +578,10 @@ function renderCharts(result) {
       },
     ],
   });
-  $('line-legend').innerHTML = [
+  $('line-legend').innerHTML = hasData ? [
     { label: investing ? 'Traditional + match + side account' : 'Traditional + match', tone: 'trad' },
     { label: hasMatch ? 'Roth + match' : 'Roth', tone: 'roth' },
-  ].map(swatch).join('');
+  ].map(swatch).join('') : '';
 }
 
 /**
@@ -898,11 +906,11 @@ function renderPaycheck(result) {
     // deferral, and claiming otherwise would be plainly contradicted by the
     // totals directly above.
     $('paycheck-note').textContent =
-      `These totals do not match, so this is not yet a fair comparison. Grossing up cannot `
-      + `raise the Traditional contribution any further — the IRS limit has capped both at `
-      + `${formatCurrency(b.contribution.trad)} — so Traditional costs you `
-      + `${formatCurrency(b.costGap)} less ${label} that is not being invested anywhere. `
-      + 'Switch to investing the refund in a brokerage account to compare them fairly.';
+      `These totals do not match, so this is not yet a fair comparison. The IRS limit has `
+      + `capped the Traditional contribution at ${formatCurrency(b.contribution.trad)}, so `
+      + `grossing up cannot raise it any further — leaving Traditional `
+      + `${formatCurrency(b.costGap)} ${label} cheaper, and that money is not being invested `
+      + 'anywhere. Switch to investing the refund in a brokerage account to compare them fairly.';
   } else if (b.treatment === 'gross-up') {
     $('paycheck-note').textContent =
       `Identical totals, so this is a fair comparison. Note the Traditional column defers `

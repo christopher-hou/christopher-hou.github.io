@@ -32,8 +32,11 @@ function animateValues(container, target, draw) {
   const pending = running.get(container);
   if (pending) cancelAnimationFrame(pending);
 
+  // Start from where the bars ACTUALLY are, not from the last value that was
+  // requested. Dragging a slider fires far faster than the tween completes,
+  // so reading the previous target would snap the bars to a position they
+  // never reached before easing onward.
   const from = lastValues.get(container);
-  lastValues.set(container, target);
 
   const canTween = from
     && from.length === target.length
@@ -41,6 +44,7 @@ function animateValues(container, target, draw) {
     && typeof requestAnimationFrame === 'function';
 
   if (!canTween) {
+    lastValues.set(container, target);
     draw(target);
     return;
   }
@@ -49,7 +53,11 @@ function animateValues(container, target, draw) {
   const step = (now) => {
     const t = Math.min(1, (now - start) / TWEEN_MS);
     const k = ease(t);
-    draw(target.map((to, i) => from[i] + (to - from[i]) * k));
+    const frame = target.map((to, i) => from[i] + (to - from[i]) * k);
+    // Recorded every frame, so an interruption resumes from the rendered
+    // position rather than from the destination.
+    lastValues.set(container, frame);
+    draw(frame);
     if (t < 1) {
       running.set(container, requestAnimationFrame(step));
     } else {
@@ -122,6 +130,16 @@ function el(name, attrs = {}, text) {
  * }} config
  */
 export function renderBarChart(container, config) {
+  const dataMax = Math.max(
+    ...config.groups.flatMap((g) => g.bars.map((b) => sum(b.segments))), 0,
+  );
+  // With no money anywhere, niceScale floors the axis at 1 and the ticks
+  // render as "$0 $0 $0 $1 $1 $1". Nothing useful to draw, so draw nothing.
+  if (!(dataMax > 0)) {
+    lastValues.delete(container);
+    container.textContent = '';
+    return;
+  }
   const scale = niceScale(Math.max(
     ...config.groups.flatMap((g) => g.bars.map((b) => sum(b.segments))), 1,
   ));
@@ -242,7 +260,11 @@ function drawBarChart(container, config, values, scale) {
  */
 export function renderLineChart(container, config) {
   const ys = config.series.flatMap((serie) => serie.points.map((p) => p.y));
-  if (ys.length < 2) { container.textContent = ''; return; }
+  if (ys.length < 2 || !(Math.max(...ys) > 0)) {
+    lastValues.delete(container);
+    container.textContent = '';
+    return;
+  }
   const scale = niceScale(Math.max(...ys, 1));
   const target = [...ys, scale.max];
   animateValues(container, target, (values) => drawLineChart(
