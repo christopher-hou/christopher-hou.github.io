@@ -194,10 +194,20 @@ function drawBarChart(container, config, values, scale) {
         if (value <= 0) continue;
         const top = yOf(stacked + value);
         const bottom = yOf(stacked);
+        const height = Math.max(0, bottom - top);
         svg.appendChild(el('rect', {
-          x, y: top, width: barW, height: Math.max(0, bottom - top),
+          x, y: top, width: barW, height,
           class: `chart-bar seg-${segment.tone}`,
         }));
+        // Only label a band with room for the text, otherwise it collides
+        // with its neighbours.
+        if (height >= 16) {
+          svg.appendChild(el('text', {
+            x: x + barW / 2, y: top + height / 2 + 3.5,
+            class: `chart-seg-label seg-label-${segment.tone}`,
+            'text-anchor': 'middle',
+          }, formatCompactCurrency(value)));
+        }
         stacked += value;
       }
       svg.appendChild(el('text', {
@@ -338,7 +348,12 @@ function dataTable(groups) {
     const row = body.insertRow();
     row.appendChild(th(group.label));
     for (const bar of group.bars) {
-      row.insertCell().textContent = formatCurrency(sum(bar.segments));
+      const parts = bar.segments
+        .filter((segment) => segment.value > 0)
+        .map((segment) => `${segment.tone} ${formatCurrency(segment.value)}`)
+        .join(', ');
+      row.insertCell().textContent =
+        `${formatCurrency(sum(bar.segments))}${parts ? ` (${parts})` : ''}`;
     }
   }
   wrap.appendChild(table);

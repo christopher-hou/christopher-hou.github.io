@@ -167,9 +167,17 @@
       <input type="range" class="field-range">
       <div class="field-bounds"><span class="bound-min"></span><span class="bound-max"></span></div>
       <p class="field-hint"></p>
-      <p class="field-help" hidden></p>
+      <p class="field-help sr-only"></p>
     </div>
   </template>
+
+  <div class="popover" id="help-popover" role="dialog" aria-modal="false" hidden>
+    <button type="button" class="popover-close" id="help-popover-close" aria-label="Close">
+      <span aria-hidden="true">&times;</span>
+    </button>
+    <p class="popover-title" id="help-popover-title"></p>
+    <p class="popover-body" id="help-popover-body"></p>
+  </div>
 
   <script type="module" src="assets/js/app.js"></script>
 </body>

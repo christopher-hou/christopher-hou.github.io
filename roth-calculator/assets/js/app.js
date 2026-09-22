@@ -61,11 +61,7 @@ function buildFields() {
     row.querySelector('.bound-min').textContent = boundText(field, field.min);
     row.querySelector('.bound-max').textContent = boundText(field, field.max);
 
-    helpToggle.addEventListener('click', () => {
-      const open = helpToggle.getAttribute('aria-expanded') === 'true';
-      helpToggle.setAttribute('aria-expanded', String(!open));
-      help.hidden = open;
-    });
+    helpToggle.addEventListener('click', () => toggleHelp(helpToggle, field));
 
     if (field.estimator) {
       estimate.hidden = false;
@@ -163,6 +159,96 @@ function booleanField(field) {
   return wrap;
 }
 
+/* ------------------------------ help popover ------------------------------ */
+
+/** @type {HTMLButtonElement|null} */
+let openHelpTrigger = null;
+
+/**
+ * @param {HTMLButtonElement} trigger
+ * @param {{label: string, help: string}} field
+ */
+function toggleHelp(trigger, field) {
+  if (openHelpTrigger === trigger) { closeHelp(); return; }
+  openHelp(trigger, field);
+}
+
+/**
+ * @param {HTMLButtonElement} trigger
+ * @param {{label: string, help: string}} field
+ */
+function openHelp(trigger, field) {
+  const popover = $('help-popover');
+  if (openHelpTrigger) openHelpTrigger.setAttribute('aria-expanded', 'false');
+
+  $('help-popover-title').textContent = field.label;
+  $('help-popover-body').textContent = field.help;
+  popover.setAttribute('aria-label', `About ${field.label}`);
+  popover.hidden = false;
+
+  openHelpTrigger = trigger;
+  trigger.setAttribute('aria-expanded', 'true');
+  positionHelp(trigger);
+  /** @type {HTMLButtonElement} */ ($('help-popover-close')).focus();
+}
+
+function closeHelp() {
+  const popover = $('help-popover');
+  popover.hidden = true;
+  if (openHelpTrigger) {
+    openHelpTrigger.setAttribute('aria-expanded', 'false');
+    // Returning focus to the ? keeps keyboard navigation where it was.
+    openHelpTrigger.focus();
+    openHelpTrigger = null;
+  }
+}
+
+/** @param {HTMLElement} trigger */
+function positionHelp(trigger) {
+  const popover = $('help-popover');
+  const anchorRect = trigger.getBoundingClientRect();
+  const box = popover.getBoundingClientRect();
+  const GAP = 10;
+  const EDGE = 12;
+
+  // Flip above the trigger when there is not enough room below it.
+  const below = anchorRect.bottom + GAP + box.height <= window.innerHeight - EDGE;
+  const top = below
+    ? anchorRect.bottom + GAP
+    : Math.max(EDGE, anchorRect.top - GAP - box.height);
+
+  const preferredLeft = anchorRect.left + anchorRect.width / 2 - box.width / 2;
+  const left = clamp(preferredLeft, EDGE, Math.max(EDGE, window.innerWidth - box.width - EDGE));
+
+  popover.style.top = `${top}px`;
+  popover.style.left = `${left}px`;
+  popover.setAttribute('data-placement', below ? 'below' : 'above');
+  // Keep the caret pointing at the ? even when the card was clamped sideways.
+  const caretX = clamp(anchorRect.left + anchorRect.width / 2 - left, 12, box.width - 12);
+  popover.style.setProperty('--caret-x', `${caretX}px`);
+}
+
+function wireHelpPopover() {
+  $('help-popover-close').addEventListener('click', closeHelp);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && openHelpTrigger) { e.preventDefault(); closeHelp(); }
+  });
+
+  document.addEventListener('pointerdown', (e) => {
+    if (!openHelpTrigger) return;
+    const target = /** @type {Node} */ (e.target);
+    if ($('help-popover').contains(target) || openHelpTrigger.contains(target)) return;
+    closeHelp();
+  });
+
+  // The card is fixed-position, so it would drift away from its ? on scroll.
+  for (const target of [window, document.querySelector('.inputs')]) {
+    target?.addEventListener('scroll', () => { if (openHelpTrigger) closeHelp(); }, { passive: true });
+  }
+  window.addEventListener('resize', () => { if (openHelpTrigger) positionHelp(openHelpTrigger); });
+}
+
 /* ------------------------------ state plumbing ------------------------------ */
 
 function setValue(key, value) {
@@ -177,9 +263,11 @@ function syncControls(result) {
     const value = inputs[field.key];
 
     if (control.row) {
-      control.row.hidden = typeof field.visibleWhen === 'function'
+      const hidden = typeof field.visibleWhen === 'function'
         ? !field.visibleWhen(inputs)
         : false;
+      control.row.hidden = hidden;
+      if (hidden && openHelpTrigger && control.row.contains(openHelpTrigger)) closeHelp();
     }
 
     if (field.kind === 'boolean') {
@@ -790,6 +878,7 @@ function wireChrome() {
 
 buildFields();
 wireChrome();
+wireHelpPopover();
 render();
 
 // Enabled only after the first render, so the initial paint does not animate
