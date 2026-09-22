@@ -1,5 +1,5 @@
 // @ts-check
-import { PAY_FREQUENCIES, TAX_SAVINGS_TREATMENTS } from './engine.js';
+import { PAY_FREQUENCIES, TAX_SAVINGS_TREATMENTS, RETIREMENT_TAX_MODES } from './engine.js';
 
 /**
  * @typedef {Object} Field
@@ -12,6 +12,7 @@ import { PAY_FREQUENCIES, TAX_SAVINGS_TREATMENTS } from './engine.js';
  * @property {number} [step]
  * @property {string} [group]
  * @property {boolean} [estimator] render an "Estimate" button
+ * @property {(inputs: Record<string, any>) => boolean} [visibleWhen] hide when false
  * @property {Array<{value: string, label: string, detail?: string}>} [options]
  */
 
@@ -43,6 +44,16 @@ export const FIELDS = Object.freeze([
     help: 'The share of your gross income you defer each year. Employer match is excluded, as it is pre-tax either way and does not affect the choice.',
   },
   {
+    key: 'employerMatchRate', label: 'Employer match', kind: 'percent',
+    min: 0, max: 200, step: 5, group: 'basics',
+    help: 'How much of your own contribution your employer adds. 100% means a dollar-for-dollar match; 50% means fifty cents on the dollar.',
+  },
+  {
+    key: 'employerMatchLimit', label: 'Match applies up to', kind: 'percent',
+    min: 0, max: 15, step: 0.5, group: 'basics',
+    help: 'The share of your pay the match stops at. "100% up to 4%" means you must contribute at least 4% to collect the full match.',
+  },
+  {
     key: 'payFrequency', label: 'Pay frequency', kind: 'select',
     options: PAY_FREQUENCIES.map((f) => ({ value: f.value, label: f.label })),
     group: 'basics',
@@ -65,8 +76,29 @@ export const FIELDS = Object.freeze([
     help: 'Your marginal state income tax rate today. Enter 0 if your state has no income tax.',
   },
   {
+    key: 'retirementTaxMode', label: 'Retirement tax', kind: 'select',
+    options: RETIREMENT_TAX_MODES.map((m) => ({
+      value: m.value, label: m.label, detail: m.detail,
+    })),
+    group: 'taxes',
+    help: 'How federal tax on withdrawals is worked out. Estimating from brackets is more accurate, because withdrawals fill the standard deduction and the low brackets before reaching your top rate.',
+  },
+  {
+    key: 'withdrawalRate', label: 'Annual withdrawal rate', kind: 'percent',
+    min: 2, max: 10, step: 0.1, group: 'taxes',
+    visibleWhen: (i) => i.retirementTaxMode !== 'flat',
+    help: 'The share of your balance you draw each year in retirement. 4% is the common rule of thumb. Larger withdrawals reach into higher brackets.',
+  },
+  {
+    key: 'otherRetirementIncome', label: 'Other retirement income', kind: 'money',
+    min: 0, max: 200000, step: 1000, group: 'taxes',
+    visibleWhen: (i) => i.retirementTaxMode !== 'flat',
+    help: 'Social Security, a pension or other taxable income, in today\u2019s dollars. It fills the low brackets first, pushing your 401(k) withdrawals into higher ones.',
+  },
+  {
     key: 'retirementFederalRate', label: 'Federal tax rate in retirement', kind: 'percent',
     min: 0, max: 50, step: 1, group: 'taxes', estimator: true,
+    visibleWhen: (i) => i.retirementTaxMode === 'flat',
     help: 'The marginal federal rate you expect on withdrawals. Use Estimate to derive it from your projected balance in today’s dollars.',
   },
   {

@@ -13,6 +13,7 @@
   --trad-soft: #e8a882;
   --roth: #1e3a5f;
   --roth-soft: #7d9dc0;
+  --match: #4a7c6b;
   --good: #146c43;
   --warn-bg: #fff8e6;
   --warn-border: #e6cf92;
@@ -36,6 +37,7 @@
   --trad-soft: #f6bd93;
   --roth: #8fb4dd;
   --roth-soft: #3f5b7a;
+  --match: #6fae97;
   --good: #63c98d;
   --warn-bg: #2b2409;
   --warn-border: #5c4c15;
@@ -44,6 +46,49 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
+
+/* Theme cross-fade. Enabled by a class added after first paint so the page
+   does not animate its own initial render. */
+.theme-ready body,
+.theme-ready .panel,
+.theme-ready .btn,
+.theme-ready .field-number,
+.theme-ready .field-select,
+.theme-ready .field-help,
+.theme-ready .help-toggle,
+.theme-ready .notice,
+.theme-ready .page-header,
+.theme-ready input[type="range"]::-webkit-slider-runnable-track,
+.theme-ready th,
+.theme-ready td {
+  transition: background-color 220ms ease, color 220ms ease, border-color 220ms ease;
+}
+
+.theme-ready .chart-grid,
+.theme-ready .chart-axis,
+.theme-ready .chart-tick,
+.theme-ready .chart-value,
+.theme-ready .chart-axis-label {
+  transition: stroke 220ms ease, fill 220ms ease;
+}
+
+.theme-ready .chart-bar,
+.theme-ready .chart-line {
+  transition: fill 220ms ease, stroke 220ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-ready body, .theme-ready .panel, .theme-ready .btn,
+  .theme-ready .field-number, .theme-ready .field-select, .theme-ready .field-help,
+  .theme-ready .help-toggle, .theme-ready .notice, .theme-ready .page-header,
+  .theme-ready th, .theme-ready td,
+  .theme-ready .chart-grid, .theme-ready .chart-axis, .theme-ready .chart-tick,
+  .theme-ready .chart-value, .theme-ready .chart-axis-label,
+  .theme-ready .chart-bar, .theme-ready .chart-line {
+    transition: none;
+  }
+  * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+}
 
 html { -webkit-text-size-adjust: 100%; }
 
@@ -234,6 +279,17 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
   letter-spacing: 0.07em; color: var(--text-muted);
 }
 .verdict-headline { font-size: 1.3rem; margin: 0.35rem 0 0.4rem; }
+.theme-ready .verdict-headline,
+.theme-ready .verdict-detail,
+.theme-ready .verdict-breakeven { transition: opacity 160ms ease; }
+.verdict.is-updating .verdict-headline,
+.verdict.is-updating .verdict-detail,
+.verdict.is-updating .verdict-breakeven { opacity: 0.35; }
+@media (prefers-reduced-motion: reduce) {
+  .verdict.is-updating .verdict-headline,
+  .verdict.is-updating .verdict-detail,
+  .verdict.is-updating .verdict-breakeven { opacity: 1; }
+}
 .verdict-headline .win-trad { color: var(--trad); }
 .verdict-headline .win-roth { color: var(--roth); }
 .verdict-detail { color: var(--text-muted); font-size: 0.9rem; }
@@ -253,6 +309,19 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
 .chart-value { fill: var(--text); font-size: 10px; font-family: var(--mono); font-weight: 600; }
 .chart-axis-label { fill: var(--text); font-size: 11px; font-weight: 500; }
 .chart-note { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.5rem; }
+
+/* Series colour lives in CSS, not in inline attributes, so a theme change
+   recolours the existing chart nodes and can cross-fade. */
+.chart-bar.seg-trad { fill: var(--trad); }
+.chart-bar.seg-match { fill: var(--match); }
+.chart-bar.seg-side { fill: var(--trad-soft); }
+.chart-bar.seg-roth { fill: var(--roth); }
+.chart-line.seg-trad { stroke: var(--trad); }
+.chart-line.seg-roth { stroke: var(--roth); }
+.legend-swatch.seg-trad { background: var(--trad); }
+.legend-swatch.seg-match { background: var(--match); }
+.legend-swatch.seg-side { background: var(--trad-soft); }
+.legend-swatch.seg-roth { background: var(--roth); }
 
 .legend { display: flex; flex-wrap: wrap; gap: 0.9rem; margin-bottom: 0.6rem; }
 .legend-item { display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; }
@@ -310,3 +379,8 @@ details > summary + * { margin-top: 0.85rem; }
   .layout { grid-template-columns: 1fr; }
   .panel { break-inside: avoid; }
 }
+
+.field[hidden] { display: none; }
+
+.fairness-panel #fairness p { margin-bottom: 0.7rem; font-size: 0.9rem; }
+.fairness-panel #fairness p:last-child { margin-bottom: 0; }

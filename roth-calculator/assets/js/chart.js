@@ -3,6 +3,62 @@ import { formatCompactCurrency, formatCurrency } from './format.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
+const TWEEN_MS = 320;
+/** Last numeric values drawn per container, so a redraw can animate from them. */
+const lastValues = new WeakMap();
+/** In-flight animation frame per container, so a redraw cancels the old one. */
+const running = new WeakMap();
+
+function prefersReducedMotion() {
+  return typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+/** Ease-out cubic: fast start, gentle settle. */
+function ease(t) {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+/**
+ * Tweens a flat array of numbers and calls `draw` each frame. Falls back to
+ * drawing the final values immediately when the shape changed or the viewer
+ * asked for reduced motion.
+ * @param {HTMLElement} container
+ * @param {number[]} target
+ * @param {(values: number[]) => void} draw
+ */
+function animateValues(container, target, draw) {
+  const pending = running.get(container);
+  if (pending) cancelAnimationFrame(pending);
+
+  const from = lastValues.get(container);
+  lastValues.set(container, target);
+
+  const canTween = from
+    && from.length === target.length
+    && !prefersReducedMotion()
+    && typeof requestAnimationFrame === 'function';
+
+  if (!canTween) {
+    draw(target);
+    return;
+  }
+
+  const start = performance.now();
+  const step = (now) => {
+    const t = Math.min(1, (now - start) / TWEEN_MS);
+    const k = ease(t);
+    draw(target.map((to, i) => from[i] + (to - from[i]) * k));
+    if (t < 1) {
+      running.set(container, requestAnimationFrame(step));
+    } else {
+      running.delete(container);
+    }
+  };
+  running.set(container, requestAnimationFrame(step));
+}
+
 /**
  * Rounds an axis maximum up to a 1/2/2.5/5 x 10^n step so tick labels read
  * as round numbers.
@@ -66,6 +122,27 @@ function el(name, attrs = {}, text) {
  * }} config
  */
 export function renderBarChart(container, config) {
+  const scale = niceScale(Math.max(
+    ...config.groups.flatMap((g) => g.bars.map((b) => sum(b.segments))), 1,
+  ));
+  // The axis maximum rides along as the last tweened value. Snapping it
+  // instead would make every bar dip before growing whenever the scale grew.
+  const target = [
+    ...config.groups.flatMap((g) => g.bars.flatMap((b) => b.segments.map((x) => x.value))),
+    scale.max,
+  ];
+  animateValues(container, target, (values) => drawBarChart(
+    container, config, values.slice(0, -1), { max: values.at(-1), ticks: scale.ticks },
+  ));
+}
+
+/**
+ * @param {HTMLElement} container
+ * @param {any} config
+ * @param {number[]} values flat segment values, in config order
+ * @param {{max: number, ticks: number[]}} scale
+ */
+function drawBarChart(container, config, values, scale) {
   container.textContent = '';
   const { groups, title } = config;
 
@@ -74,12 +151,7 @@ export function renderBarChart(container, config) {
   const pad = { top: 16, right: 12, bottom: 44, left: 62 };
   const plotW = W - pad.left - pad.right;
   const plotH = H - pad.top - pad.bottom;
-
-  const dataMax = Math.max(
-    ...groups.flatMap((g) => g.bars.map((b) => sum(b.segments))),
-    1,
-  );
-  const { max, ticks } = niceScale(dataMax);
+  const { max, ticks } = scale;
 
   const svg = el('svg', {
     viewBox: `0 0 ${W} ${H}`,
@@ -94,6 +166,7 @@ export function renderBarChart(container, config) {
   const yOf = (v) => pad.top + plotH - (v / max) * plotH;
 
   for (const tick of ticks) {
+    if (tick > max) continue;
     const y = yOf(tick);
     svg.appendChild(el('line', {
       x1: pad.left, x2: pad.left + plotW, y1: y, y2: y, class: 'chart-grid',
@@ -103,6 +176,7 @@ export function renderBarChart(container, config) {
     }, formatCompactCurrency(tick)));
   }
 
+  let cursorIndex = 0;
   const groupW = plotW / groups.length;
   groups.forEach((group, gi) => {
     const barCount = group.bars.length;
@@ -114,21 +188,21 @@ export function renderBarChart(container, config) {
 
     group.bars.forEach((bar, bi) => {
       const x = groupLeft + bi * (barW + spread);
-      let cursor = 0;
+      let stacked = 0;
       for (const segment of bar.segments) {
-        if (segment.value <= 0) continue;
-        const top = yOf(cursor + segment.value);
-        const bottom = yOf(cursor);
+        const value = values[cursorIndex++] ?? 0;
+        if (value <= 0) continue;
+        const top = yOf(stacked + value);
+        const bottom = yOf(stacked);
         svg.appendChild(el('rect', {
           x, y: top, width: barW, height: Math.max(0, bottom - top),
-          fill: segment.fill, class: 'chart-bar',
+          class: `chart-bar seg-${segment.tone}`,
         }));
-        cursor += segment.value;
+        stacked += value;
       }
-      const total = sum(bar.segments);
       svg.appendChild(el('text', {
-        x: x + barW / 2, y: yOf(total) - 6, class: 'chart-value', 'text-anchor': 'middle',
-      }, formatCompactCurrency(total)));
+        x: x + barW / 2, y: yOf(stacked) - 6, class: 'chart-value', 'text-anchor': 'middle',
+      }, formatCompactCurrency(stacked)));
     });
 
     svg.appendChild(el('text', {
@@ -157,10 +231,26 @@ export function renderBarChart(container, config) {
  * }} config
  */
 export function renderLineChart(container, config) {
+  const ys = config.series.flatMap((serie) => serie.points.map((p) => p.y));
+  if (ys.length < 2) { container.textContent = ''; return; }
+  const scale = niceScale(Math.max(...ys, 1));
+  const target = [...ys, scale.max];
+  animateValues(container, target, (values) => drawLineChart(
+    container, config, values.slice(0, -1), { max: values.at(-1), ticks: scale.ticks },
+  ));
+}
+
+/**
+ * @param {HTMLElement} container
+ * @param {any} config
+ * @param {number[]} values flat y values, in series order
+ * @param {{max: number, ticks: number[]}} scale
+ */
+function drawLineChart(container, config, values, scale) {
   container.textContent = '';
   const { series, xLabel, title } = config;
-  const all = series.flatMap((s) => s.points);
-  if (all.length < 2) return;
+  const allX = series.flatMap((serie) => serie.points.map((p) => p.x));
+  if (allX.length < 2) return;
 
   const W = 560;
   const H = 260;
@@ -168,9 +258,9 @@ export function renderLineChart(container, config) {
   const plotW = W - pad.left - pad.right;
   const plotH = H - pad.top - pad.bottom;
 
-  const xMin = Math.min(...all.map((p) => p.x));
-  const xMax = Math.max(...all.map((p) => p.x));
-  const { max: yMax, ticks } = niceScale(Math.max(...all.map((p) => p.y), 1));
+  const xMin = Math.min(...allX);
+  const xMax = Math.max(...allX);
+  const { max: yMax, ticks } = scale;
 
   const svg = el('svg', {
     viewBox: `0 0 ${W} ${H}`,
@@ -185,6 +275,7 @@ export function renderLineChart(container, config) {
   const yOf = (v) => pad.top + plotH - (v / yMax) * plotH;
 
   for (const tick of ticks) {
+    if (tick > yMax) continue;
     const y = yOf(tick);
     svg.appendChild(el('line', {
       x1: pad.left, x2: pad.left + plotW, y1: y, y2: y, class: 'chart-grid',
@@ -194,14 +285,15 @@ export function renderLineChart(container, config) {
     }, formatCompactCurrency(tick)));
   }
 
-  for (const s of series) {
+  let cursor = 0;
+  for (const serie of series) {
+    const points = serie.points.map((p) => [xOf(p.x), yOf(values[cursor++] ?? 0)]);
     svg.appendChild(el('path', {
-      d: svgPath(s.points.map((p) => [xOf(p.x), yOf(p.y)])),
+      d: svgPath(/** @type {Array<[number, number]>} */ (points)),
       fill: 'none',
-      stroke: s.stroke,
       'stroke-width': 2.5,
       'stroke-linejoin': 'round',
-      class: 'chart-line',
+      class: `chart-line seg-${serie.tone}`,
     }));
   }
 

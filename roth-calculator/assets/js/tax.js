@@ -52,6 +52,34 @@ export function effectiveRate(taxableIncome) {
 }
 
 /**
+ * The effective rate on a withdrawal: the tax the withdrawal actually causes,
+ * divided by the withdrawal.
+ *
+ * This is the honest way to tax retirement income. A marginal rate assumes
+ * every dollar is taxed at the top rate you reach, but withdrawals fill the
+ * standard deduction and the low brackets first. Taking the difference
+ * between total tax with and without the withdrawal also handles other income
+ * correctly: it consumes the low brackets first, so the withdrawal stacks on
+ * top of it.
+ *
+ * @param {number} withdrawal taxable withdrawal for the year
+ * @param {number} [otherIncome] pension, Social Security, etc.
+ * @param {number} [deduction]
+ * @returns {number}
+ */
+export function incrementalEffectiveRate(
+  withdrawal,
+  otherIncome = 0,
+  deduction = STANDARD_DEDUCTION_2026,
+) {
+  if (!Number.isFinite(withdrawal) || withdrawal <= 0) return 0;
+  const other = Math.max(0, otherIncome);
+  const taxWithout = federalTaxOwed(Math.max(0, other - deduction));
+  const taxWith = federalTaxOwed(Math.max(0, other + withdrawal - deduction));
+  return (taxWith - taxWithout) / withdrawal;
+}
+
+/**
  * @param {number} grossIncome
  * @param {number} [preTaxContribution] traditional 401(k) deferral
  * @param {number} [deduction]
