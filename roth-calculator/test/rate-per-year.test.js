@@ -6,19 +6,22 @@ const base = () => ({ ...defaultInputs(), currentStateRate: 0, capitalGainsRate:
 
 describe('the deduction is valued year by year, not frozen at year one', () => {
   it('records each year’s own deduction rate in the schedule', () => {
-    const r = project({ ...base(), income: 60000, wageGrowth: 0.04 });
-    const first = r.schedule[0];
-    const last = r.schedule.at(-1);
-    expect(first.deductionRate)
-      .toBeCloseTo(deductionRateOnSlice(first.income, first.rothContribution), 8);
-    expect(last.deductionRate)
-      .toBeCloseTo(deductionRateOnSlice(last.income, last.rothContribution), 8);
+    // Valued in today's dollars, because brackets are inflation-indexed.
+    const r = project({ ...base(), income: 60000, wageGrowth: 0.04, inflation: 0.025 });
+    const real = (value, year) => value / Math.pow(1.025, year - 1);
+    for (const row of [r.schedule[0], r.schedule.at(-1)]) {
+      expect(row.deductionRate).toBeCloseTo(
+        deductionRateOnSlice(real(row.income, row.year), real(row.rothContribution, row.year)), 8,
+      );
+    }
   });
 
   it('lets the rate rise as income climbs through the brackets', () => {
-    const r = project({ ...base(), income: 60000, wageGrowth: 0.04 });
+    // 4% wages against 2.5% inflation is real growth, so the rate really does
+    // climb: $60k becomes $95,929 in today's money by retirement.
+    const r = project({ ...base(), income: 60000, wageGrowth: 0.04, inflation: 0.025 });
     expect(r.schedule[0].deductionRate).toBeCloseTo(0.12, 4);
-    expect(r.schedule.at(-1).deductionRate).toBeGreaterThan(0.25);
+    expect(r.schedule.at(-1).deductionRate).toBeCloseTo(0.22, 4);
   });
 
   it('funds the side account at each year’s rate, not year one’s', () => {
@@ -33,7 +36,7 @@ describe('the deduction is valued year by year, not frozen at year one', () => {
   });
 
   it('leaves a flat income unaffected, since every year has the same rate', () => {
-    const r = project({ ...base(), income: 60000, wageGrowth: 0 });
+    const r = project({ ...base(), income: 60000, wageGrowth: 0, inflation: 0 });
     const rates = new Set(r.schedule.map((row) => row.deductionRate.toFixed(8)));
     expect(rates.size).toBe(1);
     expect(r.traditional.side.basis)

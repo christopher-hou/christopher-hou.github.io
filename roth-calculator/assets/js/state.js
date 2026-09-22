@@ -41,7 +41,10 @@ export function decodeState(search) {
     const field = fieldByKey(key);
     if (!field) continue;
     if (field.kind === 'boolean') {
-      inputs[key] = raw === '1' || raw === 'true';
+      // Anything unrecognised keeps the default. Without this a typo such as
+      // ?capAtLimit=yes silently switched the IRS cap OFF.
+      if (raw === '1' || raw === 'true') inputs[key] = true;
+      else if (raw === '0' || raw === 'false') inputs[key] = false;
     } else if (field.kind === 'select') {
       if (field.options?.some((o) => o.value === raw)) inputs[key] = raw;
     } else {

@@ -117,11 +117,12 @@ describe('bracket-based retirement tax mode', () => {
     });
     const flat = project({ ...inputs, retirementTaxMode: 'flat' });
     const brackets = project({ ...inputs, retirementTaxMode: 'brackets' });
-    expect(flat.winner).toBe('traditional');
+    // Current and retirement rates are both 22% here, which a flat model
+    // reads as a dead heat. Taxing withdrawals from the brackets reveals the
+    // gap a flat rate hides entirely.
+    expect(flat.winner).toBe('tie');
     expect(brackets.winner).toBe('traditional');
-    // A flat marginal rate overstates retirement tax, so it understates the
-    // gap by a wide margin.
-    expect(brackets.difference).toBeGreaterThan(flat.difference * 5);
+    expect(brackets.difference).toBeGreaterThan(100000);
   });
 
   it('still reports a usable break-even rate', () => {

@@ -216,9 +216,16 @@ export function project(inputs) {
       : Infinity;
 
     const rothContribution = Math.min(desired, limit);
+    // Measured in today's dollars against today's brackets, because brackets
+    // are inflation-indexed. Applying fixed 2026 brackets to nominal future
+    // income would invent decades of bracket creep: with wages merely tracking
+    // 8% inflation, a flat real salary appeared to climb from the 17% band to
+    // the 41% one. The retirement side already works this way.
+    const realYearIncome = yearIncome / Math.pow(1 + inflation, y);
+    const realContribution = rothContribution / Math.pow(1 + inflation, y);
     // The rate is measured on the contribution actually made, so an IRS cap
     // shrinks the slice being valued rather than leaving a stale rate behind.
-    const deductionRate = deductionRateFor(yearIncome, rothContribution);
+    const deductionRate = deductionRateFor(realYearIncome, realContribution);
     // Under gross-up the Traditional side defers more so both cost identical
     // take-home pay. The larger slice could in principle be worth a slightly
     // different rate; valuing it at the base slice's rate is a deliberate
@@ -331,10 +338,13 @@ export function project(inputs) {
   const tradMatchAfterTax = tradMatchBalance * (1 - tradRetirementRate);
   const tradTotal = tradAfterTax + tradMatchAfterTax + sideAfterTax;
 
-  // The rate on the employee's own pre-tax balance that would tie the two.
-  // Match and side account are held fixed, since neither depends on it.
-  const breakEvenRetirementRate = tradBalance > 0
-    ? Math.max(0, 1 - (rothTotal - tradMatchAfterTax - sideAfterTax) / tradBalance)
+  // The retirement rate that would tie the two. It must be solved across ALL
+  // of the Traditional saver's pre-tax money -- own balance and employer
+  // match alike -- because both are taxed at the very rate being solved for.
+  // Holding the match's after-tax value fixed overstated the threshold by
+  // nearly three points under the shipped defaults.
+  const breakEvenRetirementRate = tradPreTax > 0
+    ? Math.max(0, 1 - (rothTotal - sideAfterTax) / tradPreTax)
     : 0;
 
   const difference = Math.abs(rothTotal - tradTotal);

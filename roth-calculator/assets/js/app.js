@@ -10,7 +10,7 @@ import {
   capitalGainsRate, estimateCurrentMarginalRate, estimateRetirementMarginalRate, bracketLabel,
   marginalRate,
 } from './tax.js';
-import { DEFAULT_WITHDRAWAL_RATE, TAX_YEAR } from './tax-data.js';
+import { DEFAULT_WITHDRAWAL_RATE, STANDARD_DEDUCTION_2026, TAX_YEAR } from './tax-data.js';
 
 const THEME_KEY = 'roth-calc-theme';
 
@@ -354,14 +354,19 @@ function hintFor(key, result) {
 /* ------------------------------ estimators ------------------------------ */
 
 function runEstimator(key) {
-  const result = project(inputs);
   if (key === 'currentFederalRate') {
     const preTax = inputs.income * inputs.contributionPercent;
     setValue(key, estimateCurrentMarginalRate(inputs.income, preTax));
   } else if (key === 'retirementFederalRate') {
     // Estimated in today's dollars, because brackets are inflation-indexed.
+    // Uses the withdrawal rate and other income the user has already set:
+    // those fields are hidden in flat mode but their values persist, and
+    // ignoring them produced an estimate that silently matched the default.
+    const result = project(inputs);
     setValue(key, estimateRetirementMarginalRate(
-      result.real.traditional.balance, DEFAULT_WITHDRAWAL_RATE, 0,
+      result.real.traditional.preTaxBalance,
+      inputs.withdrawalRate ?? DEFAULT_WITHDRAWAL_RATE,
+      inputs.otherRetirementIncome ?? 0,
     ));
   } else if (key === 'capitalGainsRate') {
     setValue(key, capitalGainsRate(inputs.income));
@@ -445,6 +450,20 @@ function renderVerdict(result) {
       + ` — a ${formatPercent(v.difference / Math.max(1, Math.min(v.roth.total, v.traditional.total)), 1)} edge.`;
   }
 
+  // A verdict drawn from a comparison the page itself knows is unequal should
+  // not be stated as a plain fact in the headline.
+  const fairness = paycheckBreakdown(inputs, result);
+  const warning = $('verdict-warning');
+  if (warning) {
+    warning.hidden = fairness.equalized || result.taxSavingsTreatment === 'spend';
+    warning.innerHTML = warning.hidden ? '' :
+      `<strong>Treat this verdict with caution.</strong> The two options do not cost the same: `
+      + `Traditional is ${formatCurrency(fairness.costGap)} a year cheaper because the IRS limit `
+      + `has capped both contributions at ${formatCurrency(fairness.contribution.trad)}, so `
+      + `grossing up cannot go any further. That unspent money is not modelled anywhere. `
+      + 'Switch the tax-savings assumption to investing the refund for a fair comparison.';
+  }
+
   const breakEven = result.breakEvenRetirementRate;
   if (result.taxSavingsTreatment === 'spend') {
     $('verdict-breakeven').innerHTML =
@@ -457,7 +476,8 @@ function renderVerdict(result) {
       `Traditional wins below a combined retirement rate of <strong>${formatPercent(breakEven, 1)}</strong>. `
       + `Drawing ${formatCurrency(result.traditional.annualWithdrawal)} a year puts you at an `
       + `<strong>effective</strong> rate of <strong>${formatPercent(result.traditional.retirementRate, 1)}</strong> `
-      + `— not the ${formatPercent(marginalRate(Math.max(0, result.traditional.annualWithdrawal + inputs.otherRetirementIncome - 16100)), 0)} `
+      + `— not the ${formatPercent(marginalRate(Math.max(0,
+        result.traditional.annualWithdrawal + inputs.otherRetirementIncome - STANDARD_DEDUCTION_2026)), 0)} `
       + `marginal rate, because the standard deduction and the low brackets fill first. `
       + `Today you pay <strong>${formatPercent(result.currentCombinedRate, 1)}</strong>.`;
   } else {
@@ -613,7 +633,7 @@ function renderEconWarning(result) {
     messages.push(
       `<strong>Your projected withdrawals fall below the standard deduction.</strong> `
       + `Drawing ${formatCurrency(result.traditional.annualWithdrawal)} a year in today's money `
-      + `is under the ${formatCurrency(16100)} standard deduction, so federal tax works out to `
+      + `is under the ${formatCurrency(STANDARD_DEDUCTION_2026)} standard deduction, so federal tax works out to `
       + 'zero and results stop responding to further changes. That is arithmetic, not a '
       + 'forecast — it means the assumptions have pushed your real balance very low.',
     );
@@ -767,6 +787,12 @@ function renderCaveats(result) {
     'No modeling of required minimum distributions, Medicare IRMAA surcharges, the saver\u2019s '
       + 'credit, or early-withdrawal penalties.',
     'Returns are assumed steady. Real markets are not, and sequence-of-returns risk is not modeled.',
+    'The taxable side account is treated kindly, in three ways that stack and all favor '
+      + 'Traditional: its gains are taxed once at the end rather than annually on dividends '
+      + 'and distributions; it is assumed sold in a single year at one flat rate, when a large '
+      + 'sale would itself climb the capital gains brackets; and the <em>Estimate</em> button '
+      + 'derives that rate from your income <strong>today</strong>, though the account is sold '
+      + 'in retirement when your income is usually lower.',
     'The comparison prices only the <strong>incremental</strong> cost of contributing, never '
       + 'your baseline tax bill. A higher current tax rate therefore widens Traditional\u2019s '
       + 'lead without anything on the chart getting worse \u2014 but you are poorer overall, '
@@ -867,6 +893,16 @@ function renderPaycheck(result) {
       `The totals do not match: Roth costs you ${formatCurrency(b.costGap)} more ${label}. `
       + 'That is why it ends up worth more — you put more in. Switch the tax-savings '
       + 'assumption to compare the two fairly.';
+  } else if (!b.equalized) {
+    // Gross-up cannot equalise once the 402(g) cap truncates the larger
+    // deferral, and claiming otherwise would be plainly contradicted by the
+    // totals directly above.
+    $('paycheck-note').textContent =
+      `These totals do not match, so this is not yet a fair comparison. Grossing up cannot `
+      + `raise the Traditional contribution any further — the IRS limit has capped both at `
+      + `${formatCurrency(b.contribution.trad)} — so Traditional costs you `
+      + `${formatCurrency(b.costGap)} less ${label} that is not being invested anywhere. `
+      + 'Switch to investing the refund in a brokerage account to compare them fairly.';
   } else if (b.treatment === 'gross-up') {
     $('paycheck-note').textContent =
       `Identical totals, so this is a fair comparison. Note the Traditional column defers `

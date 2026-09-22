@@ -43,7 +43,7 @@ export const FIELDS = Object.freeze([
   {
     key: 'contributionPercent', label: 'Contribution', kind: 'percent',
     min: 0, max: 50, step: 0.5, group: 'basics',
-    help: 'The share of your gross income you defer each year. Employer match is excluded, as it is pre-tax either way and does not affect the choice.',
+    help: 'The share of your gross income you defer each year. The employer match is counted separately below.',
   },
   {
     key: 'employerMatchRate', label: 'Employer match', kind: 'percent',
@@ -53,7 +53,7 @@ export const FIELDS = Object.freeze([
   {
     key: 'employerMatchLimit', label: 'Match applies up to', kind: 'percent',
     min: 0, max: 15, step: 0.5, group: 'basics',
-    help: 'The share of your pay the match stops at. "100% up to 4%" means you must contribute at least 4% to collect the full match.',
+    help: 'The share of your pay the match stops at. "100% up to 4%" means you must contribute at least 4% to collect the full match. The match is pre-tax on both sides, but it still shifts the answer: it gives a Roth saver taxable retirement income, which fills the low brackets and lowers their effective rate.',
   },
   {
     key: 'payFrequency', label: 'Pay frequency', kind: 'select',
@@ -98,7 +98,7 @@ export const FIELDS = Object.freeze([
     key: 'withdrawalRate', label: 'Annual withdrawal rate', kind: 'percent',
     min: 2, max: 10, step: 0.1, group: 'taxes',
     visibleWhen: (i) => i.retirementTaxMode !== 'flat',
-    help: 'The share of your balance you draw each year in retirement. 4% is the common rule of thumb. Larger withdrawals reach into higher brackets.',
+    help: 'The share of your balance you draw each year in retirement. 4% is the common rule of thumb. Larger withdrawals reach into higher brackets. Note that a lower rate defers tax rather than avoiding it \u2014 the money is still taxed when it eventually comes out, and required minimum distributions set a floor from age 73.',
   },
   {
     key: 'otherRetirementIncome', label: 'Other retirement income', kind: 'money',

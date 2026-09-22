@@ -11,9 +11,15 @@ contributions expressed as a percent of income.
 ## 2. Constraints that drive the stack
 
 The deploy target is <https://github.com/christopher-hou/christopher-hou.github.io>,
-which is **plain static HTML/CSS/JS with no build step** (no `package.json`, no
-bundler, no CI). Anything requiring compilation would force a build pipeline
-into a repo that deliberately has none.
+which serves **plain static HTML/CSS/JS with no build step** (no bundler, no
+CI). Anything requiring compilation would force a build pipeline into a repo
+that deliberately has none.
+
+The calculator now lives inside that repository, tests and all, so the repo
+does contain a `package.json` — scoped to `roth-calculator/` and used only to
+run vitest locally. It is never installed or executed by Pages, which simply
+serves files. The no-build-step rule still binds the *shipped* code: what is in
+`assets/` is exactly what the browser loads.
 
 **Therefore: no build step.** Ship hand-written ES modules that the browser
 loads directly via `<script type="module">`.
@@ -22,7 +28,7 @@ loads directly via `<script type="module">`.
 |---|---|---|
 | Language | Vanilla ES2020 modules + JSDoc types | Runs as-authored in the browser *and* under Node for tests. TypeScript would need a compile step. |
 | Types | JSDoc + `// @ts-check` | Editor-level type safety with zero build. |
-| Tests | Vitest | Imports the same `.js` files the browser loads. Dev-only dependency; never shipped. |
+| Tests | Vitest | Imports the same `.js` files the browser loads. Dev-only; never loaded by the page. |
 | Charts | Hand-rolled inline SVG | No Chart.js/D3 download; full control over flat styling. |
 | Styling | One plain CSS file, CSS custom properties | No preprocessor. |
 | Deps shipped to the browser | **Zero** | Page works offline, from `file://`-adjacent paths, and in any subdirectory. |
@@ -174,13 +180,26 @@ match        = min(actualContribution, matchCeiling) x matchRate
 ```
 
 It is driven off the *actual* deferral, so an IRS-capped contribution trims
-the match too. Because it is identical and identically taxed on both sides, it
-drops out of the difference and **cannot change the verdict** — asserted by
-test. It is still drawn on both bars so a reader can see it cancel.
+the match too.
 
-It is not free of consequence though: it hands a Roth saver taxable retirement
-income, which matters to the bracket calculation below. Under gross-up it can
-also differ between sides, since deferring more can capture more match.
+**It does change the verdict**, and the reason is worth stating. Under a single
+flat retirement rate the match is algebraically identical on both sides and
+cancels out exactly. Under progressive brackets it does not: the Roth saver's
+only pre-tax money *is* the match, so their withdrawal is small and fills the
+low brackets, while the Traditional saver has already consumed those brackets
+with their own balance. The two end up at genuinely different effective rates,
+and the gap narrows as the match grows:
+
+```
+match   0%  ->  gap $138,050
+match 100%  ->  gap  $97,490   (the shipped default)
+match 200%  ->  gap  $54,246
+```
+
+Tests assert both halves: that the match moves the gap in `brackets` mode, and
+that it cancels in `flat` mode. It is drawn on both bars so a reader can see
+where it sits. Under gross-up it can also differ between sides, since deferring
+more can capture more match.
 
 ### Retirement tax from brackets (added after first review)
 

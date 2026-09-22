@@ -79,7 +79,11 @@ describe('the match is pre-tax in BOTH scenarios', () => {
     expect(r.traditional.match.balance).toBeCloseTo(r.roth.match.balance, 6);
   });
 
-  it('does not change which account wins, because it is identical on both sides', () => {
+  it('cancels out under a single flat retirement rate', () => {
+    // This fixture is flat mode, which forces one shared rate on both sides.
+    // The match term is then algebraically identical either way, so it must
+    // cancel. That is a property of flat mode, NOT of the engine in general --
+    // see the brackets-mode test below.
     for (const [now, ret] of [[0.12, 0.32], [0.32, 0.12], [0.22, 0.22]]) {
       const noMatch = project(withBase({
         rateOfReturn: 0.07, currentFederalRate: now, retirementFederalRate: ret,
@@ -89,16 +93,29 @@ describe('the match is pre-tax in BOTH scenarios', () => {
         employerMatchRate: 1, employerMatchLimit: 0.04,
       }));
       expect(withMatch.winner).toBe(noMatch.winner);
+      expect(withMatch.difference).toBeCloseTo(noMatch.difference, 6);
     }
   });
 
-  it('leaves the dollar gap between the options unchanged', () => {
-    const noMatch = project(withBase({ rateOfReturn: 0.07, currentFederalRate: 0.32 }));
-    const withMatch = project(withBase({
-      rateOfReturn: 0.07, currentFederalRate: 0.32,
+  it('does NOT cancel under progressive brackets, which is the shipped default', () => {
+    // The Roth saver's only pre-tax money is the match, so their withdrawal is
+    // small and fills the low brackets. The Traditional saver has already used
+    // those brackets on their own balance. Different effective rates, so the
+    // match genuinely shifts the answer.
+    const gap = (employerMatchRate) => project(withBase({
+      rateOfReturn: 0.07, retirementTaxMode: 'brackets',
+      employerMatchRate, employerMatchLimit: 0.04,
+    })).difference;
+    expect(gap(0)).toBeGreaterThan(gap(1));
+    expect(gap(1)).toBeGreaterThan(gap(2));
+  });
+
+  it('gives the Roth saver the lower effective rate of the two', () => {
+    const r = project(withBase({
+      rateOfReturn: 0.07, retirementTaxMode: 'brackets',
       employerMatchRate: 1, employerMatchLimit: 0.04,
     }));
-    expect(withMatch.difference).toBeCloseTo(noMatch.difference, 6);
+    expect(r.roth.effectiveFederalRate).toBeLessThan(r.traditional.effectiveFederalRate);
   });
 
   it('raises both totals by the same after-tax amount', () => {
