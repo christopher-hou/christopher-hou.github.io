@@ -84,6 +84,22 @@
         <p class="chart-note" id="chart-note"></p>
       </div>
 
+      <div class="panel">
+        <div class="panel-head">
+          <h2>What it does to your paycheck</h2>
+          <div class="dollar-toggle" role="group" aria-label="Period">
+            <button type="button" class="seg period-seg is-active" data-period="year"
+              aria-pressed="true">Per year</button>
+            <button type="button" class="seg period-seg" data-period="period"
+              aria-pressed="false">Per paycheck</button>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="compare" id="paycheck-table"></table>
+        </div>
+        <p class="chart-note" id="paycheck-note"></p>
+      </div>
+
       <details class="panel fairness-panel">
         <summary><h2>Why is there a &ldquo;side account&rdquo;?</h2></summary>
         <div id="fairness"></div>
@@ -94,6 +110,7 @@
         <div class="table-scroll">
           <table class="compare" id="compare-table"></table>
         </div>
+        <p class="chart-note" id="compare-note"></p>
       </div>
 
       <div class="panel">

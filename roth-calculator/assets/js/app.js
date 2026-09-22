@@ -1,5 +1,5 @@
 // @ts-check
-import { project, TAX_SAVINGS_TREATMENTS } from './engine.js';
+import { project, paycheckBreakdown, TAX_SAVINGS_TREATMENTS } from './engine.js';
 import { FIELDS, toDisplayValue, toModelValue } from './fields.js';
 import { decodeState, encodeState } from './state.js';
 import {
@@ -17,6 +17,8 @@ const THEME_KEY = 'roth-calc-theme';
 let inputs = decodeState(window.location.search);
 /** @type {'nominal'|'real'} */
 let basis = 'nominal';
+/** @type {'year'|'period'} */
+let period = 'year';
 /** @type {Map<string, {number: HTMLInputElement, range: HTMLInputElement|null, hint: HTMLElement}>} */
 const controls = new Map();
 
@@ -276,6 +278,7 @@ function render() {
   renderCompare(result);
   renderSchedule(result);
   renderCaveats(result);
+  renderPaycheck(result);
   renderFairness(result);
 
   const query = encodeState(inputs);
@@ -466,29 +469,58 @@ function swatch(item) {
 function renderCompare(result) {
   const v = view(result);
   const investing = result.taxSavingsTreatment === 'invest';
+  const grossUp = result.taxSavingsTreatment === 'gross-up';
   const hasMatch = result.roth.match.balance > 0;
   const tradWins = result.winner === 'traditional';
   const rothWins = result.winner === 'roth';
   const brackets = result.retirementTaxMode === 'brackets';
 
-  const rows = [
-    ['Total contributed', formatCurrency(v.traditional.contributions), formatCurrency(v.roth.contributions)],
-    ['Take-home pay given up', formatCurrency(v.traditional.outOfPocket), formatCurrency(v.roth.outOfPocket)],
-    ['401(k) balance at retirement', formatCurrency(v.traditional.balance), formatCurrency(v.roth.balance)],
-    hasMatch ? ['Employer match balance', formatCurrency(v.traditional.match.balance), formatCurrency(v.roth.match.balance)] : null,
-    investing ? ['Taxable side account', formatCurrency(v.traditional.side.balance), '\u2014'] : null,
-    brackets
-      ? ['Effective tax rate on withdrawals', formatPercent(result.traditional.retirementRate, 1), formatPercent(result.roth.retirementRate, 1)]
+  const section = (text) => ({ section: text });
+  const row = (label, a, b, cls = '') => ({ label, a, b, cls });
+
+  const items = [
+    section('What it costs you'),
+    row('Paid into the 401(k)', formatCurrency(v.traditional.contributions), formatCurrency(v.roth.contributions),
+      grossUp ? '' : 'row-muted'),
+    investing
+      ? row('Paid into the taxable side account', formatCurrency(v.traditional.side.basis ?? 0), '\u2014')
       : null,
-    ['Tax due on withdrawal', formatCurrency(v.traditional.balance - v.traditional.afterTax), formatCurrency(0)],
-    hasMatch ? ['Tax due on the match', formatCurrency(v.traditional.match.balance - v.traditional.match.afterTax), formatCurrency(v.roth.match.balance - v.roth.match.afterTax)] : null,
-    investing ? ['Tax due on side account', formatCurrency(v.traditional.side.balance - v.traditional.side.afterTax), '\u2014'] : null,
+    row('Total take-home pay given up', formatCurrency(v.traditional.outOfPocket), formatCurrency(v.roth.outOfPocket),
+      result.taxSavingsTreatment === 'spend' ? '' : 'row-rule row-equal'),
+
+    section('What you have at retirement'),
+    row('Your own 401(k) balance', formatCurrency(v.traditional.balance), formatCurrency(v.roth.balance),
+      grossUp ? '' : 'row-muted'),
+    hasMatch
+      ? row('Employer match balance', formatCurrency(v.traditional.match.balance), formatCurrency(v.roth.match.balance), 'row-muted')
+      : null,
+    investing
+      ? row('Taxable side account', formatCurrency(v.traditional.side.balance), '\u2014')
+      : null,
+
+    section('What tax takes'),
+    // A rate on a Roth saver with no employer match applies to nothing, so
+    // printing one would imply tax they do not owe.
+    row(
+      brackets ? 'Effective rate on withdrawals' : 'Rate on withdrawals',
+      result.traditional.preTaxBalance > 0 ? formatPercent(result.traditional.retirementRate, 1) : '\u2014',
+      result.roth.preTaxBalance > 0 ? formatPercent(result.roth.retirementRate, 1) : '\u2014',
+    ),
+    row('Tax on your own balance', formatCurrency(v.traditional.balance - v.traditional.afterTax), formatCurrency(0)),
+    hasMatch
+      ? row('Tax on the employer match', formatCurrency(v.traditional.match.balance - v.traditional.match.afterTax), formatCurrency(v.roth.match.balance - v.roth.match.afterTax))
+      : null,
+    investing
+      ? row('Tax on the side account', formatCurrency(v.traditional.side.balance - v.traditional.side.afterTax), '\u2014')
+      : null,
   ].filter(Boolean);
 
   const head = `<thead><tr><th scope="col">Measure</th>
     <th scope="col">Traditional</th><th scope="col">Roth</th></tr></thead>`;
-  const body = rows.map(([label, a, b]) =>
-    `<tr><th scope="row">${label}</th><td>${a}</td><td>${b}</td></tr>`).join('');
+  const body = items.map((item) => (item.section
+    ? `<tr class="row-section"><th scope="row" colspan="3">${item.section}</th></tr>`
+    : `<tr class="${item.cls}"><th scope="row">${item.label}</th><td>${item.a}</td><td>${item.b}</td></tr>`
+  )).join('');
   const total = `<tr class="row-total"><th scope="row">After-tax value</th>
     <td class="${tradWins ? 'col-win' : ''}">${formatCurrency(v.traditional.total)}</td>
     <td class="${rothWins ? 'col-win' : ''}">${formatCurrency(v.roth.total)}</td></tr>
@@ -497,6 +529,23 @@ function renderCompare(result) {
     <td>${formatSignedCurrency(v.roth.total - v.traditional.total)}</td></tr>`;
 
   $('compare-table').innerHTML = `${head}<tbody>${body}${total}</tbody>`;
+
+  // Several rows are identical on purpose, which looks like a bug unless said
+  // out loud.
+  const note = $('compare-note');
+  if (!note) return;
+  if (result.taxSavingsTreatment === 'spend') {
+    note.textContent = 'Take-home pay given up is NOT equal here, because the Traditional tax '
+      + 'savings are being spent. That is what makes this comparison unfair to Traditional.';
+  } else if (grossUp) {
+    note.textContent = 'Take-home pay given up is identical by design. The Traditional column '
+      + 'shows a larger contribution and balance because the tax saving buys a bigger deferral.';
+  } else {
+    note.textContent = 'The contribution and 401(k) balance rows are identical because the same '
+      + 'amount is deferred either way — tax is never taken out of the contribution itself. '
+      + 'Take-home pay given up is identical too, because the side account absorbs exactly the '
+      + 'tax saving. That equality is what makes the bottom line a fair comparison.';
+  }
 }
 
 function renderSchedule(result) {
@@ -572,6 +621,73 @@ function renderCaveats(result) {
   $('caveat-list').innerHTML = items.map((t) => `<li>${t}</li>`).join('');
 }
 
+function renderPaycheck(result) {
+  const b = paycheckBreakdown(inputs, result);
+  const per = period === 'period' ? b.perPeriod : b;
+  const scale = period === 'period' ? 1 / b.periodsPerYear : 1;
+  const $$ = (x) => formatCurrency(x, { cents: period === 'period' });
+  /** Renders an outflow, without the pointless minus sign on zero. */
+  const out = (x) => (Math.abs(x) < 0.005 ? $$(0) : `\u2212${$$(x)}`);
+
+  const label = period === 'period'
+    ? `each of your ${b.periodsPerYear} paychecks a year`
+    : 'a year';
+
+  const rows = [
+    ['Gross pay', $$(per.gross), $$(per.gross), 'row-muted'],
+    ['Into the 401(k)', out(per.contribution.trad), out(per.contribution.roth), ''],
+    ['Wages you still pay tax on', $$(b.taxableWages.trad * scale), $$(b.taxableWages.roth * scale), 'row-muted'],
+    [
+      `Tax on the wages you did not shelter, at ${formatPercent(b.rate, 1)}`,
+      out(per.extraTax.trad),
+      out(per.extraTax.roth),
+      '',
+    ],
+    ['Cut to your take-home pay', $$(per.takeHomeCut.trad), $$(per.takeHomeCut.roth), 'row-rule'],
+  ];
+
+  if (b.treatment === 'invest') {
+    rows.push(['Into a taxable brokerage account instead', out(per.sideDeposit.trad), '\u2014', '']);
+  }
+  if (b.match.roth > 0) {
+    rows.push([
+      'Employer match added on top (costs you nothing)',
+      `+${$$(b.match.trad * scale)}`,
+      `+${$$(b.match.roth * scale)}`,
+      'row-muted',
+    ]);
+  }
+
+  const head = `<thead><tr><th scope="col">${label.charAt(0).toUpperCase()}${label.slice(1)}</th>
+    <th scope="col">Traditional</th><th scope="col">Roth</th></tr></thead>`;
+  const body = rows.map(([text, a, c, cls]) =>
+    `<tr class="${cls}"><th scope="row">${text}</th><td>${a}</td><td>${c}</td></tr>`).join('');
+  const total = `<tr class="row-total ${b.equalized ? 'row-equal' : ''}">
+    <th scope="row">Total cost to you</th>
+    <td>${$$(per.totalCost.trad)}</td><td>${$$(per.totalCost.roth)}</td></tr>`;
+
+  $('paycheck-table').innerHTML = `${head}<tbody>${body}${total}</tbody>`;
+
+  if (b.contribution.roth === 0) {
+    $('paycheck-note').textContent = 'Set a contribution above 0% to see the breakdown.';
+  } else if (b.treatment === 'spend') {
+    $('paycheck-note').textContent =
+      `The totals do not match: Roth costs you ${formatCurrency(b.costGap)} more ${label}. `
+      + 'That is why it ends up worth more — you put more in. Switch the tax-savings '
+      + 'assumption to compare the two fairly.';
+  } else if (b.treatment === 'gross-up') {
+    $('paycheck-note').textContent =
+      `Identical totals, so this is a fair comparison. Note the Traditional column defers `
+      + `${formatCurrency(b.contribution.trad - b.contribution.roth)} more ${label} — that is what `
+      + 'the tax saving buys.';
+  } else {
+    $('paycheck-note').textContent =
+      'Identical totals, so this is a fair comparison. The same amount reaches the 401(k) '
+      + 'either way; what differs is the tax on the rest of your pay, which comes out of '
+      + 'take-home rather than out of the account.';
+  }
+}
+
 function renderFairness(result) {
   const panel = $('fairness');
   if (!panel) return;
@@ -618,10 +734,21 @@ function renderFairness(result) {
 /* ------------------------------ chrome ------------------------------ */
 
 function wireChrome() {
-  for (const seg of document.querySelectorAll('.seg')) {
+  for (const seg of document.querySelectorAll('.seg:not(.period-seg)')) {
     seg.addEventListener('click', () => {
       basis = /** @type {'nominal'|'real'} */ (seg.getAttribute('data-basis'));
-      for (const other of document.querySelectorAll('.seg')) {
+      for (const other of document.querySelectorAll('.seg:not(.period-seg)')) {
+        other.classList.toggle('is-active', other === seg);
+        other.setAttribute('aria-pressed', String(other === seg));
+      }
+      render();
+    });
+  }
+
+  for (const seg of document.querySelectorAll('.period-seg')) {
+    seg.addEventListener('click', () => {
+      period = /** @type {'year'|'period'} */ (seg.getAttribute('data-period'));
+      for (const other of document.querySelectorAll('.period-seg')) {
         other.classList.toggle('is-active', other === seg);
         other.setAttribute('aria-pressed', String(other === seg));
       }

@@ -384,3 +384,20 @@ details > summary + * { margin-top: 0.85rem; }
 
 .fairness-panel #fairness p { margin-bottom: 0.7rem; font-size: 0.9rem; }
 .fairness-panel #fairness p:last-child { margin-bottom: 0; }
+
+/* Paycheck walkthrough: the arithmetic is the point, so give the running
+   subtotals a rule and mute the derived rows. */
+.compare .row-rule th, .compare .row-rule td { border-top: 1px solid var(--border-strong); }
+.compare .row-muted th, .compare .row-muted td { color: var(--text-muted); }
+.compare .row-equal td { color: var(--good); font-weight: 600; }
+.compare caption {
+  caption-side: top; text-align: left; font-size: 0.78rem;
+  color: var(--text-muted); padding-bottom: 0.5rem;
+}
+
+.compare .row-section th {
+  font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--text-muted); font-weight: 600;
+  padding-top: 0.9rem; border-bottom: 1px solid var(--border-strong);
+}
+.compare .row-section:first-child th { padding-top: 0.2rem; }

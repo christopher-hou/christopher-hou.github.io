@@ -367,7 +367,9 @@ export function project(inputs) {
         outOfPocket: realTradContributions * (1 - currentRate) + realSideBasis,
         contributions: realTradContributions,
         match: { balance: real(tradMatchBalance), afterTax: real(tradMatchAfterTax) },
-        side: { balance: real(sideBalance), afterTax: real(sideAfterTax) },
+        side: {
+          balance: real(sideBalance), afterTax: real(sideAfterTax), basis: realSideBasis,
+        },
       },
       totalContributions: realRothContributions,
       totalTraditionalContributions: realTradContributions,
@@ -375,6 +377,91 @@ export function project(inputs) {
     },
     schedule,
   };
+}
+
+/**
+ * A first-year paycheck walkthrough: what each option actually does to your
+ * pay. This exists because the headline balances hide the mechanism.
+ *
+ * The key fact it makes visible: **the same amount reaches the 401(k) either
+ * way.** Tax is not skimmed off the contribution. What differs is how much of
+ * the rest of your pay is exposed to tax, and that difference is paid out of
+ * take-home, not out of the account.
+ *
+ * @param {Inputs} inputs
+ * @param {ReturnType<typeof project>} result
+ */
+export function paycheckBreakdown(inputs, result) {
+  const first = result.schedule[0];
+  const gross = first ? first.income : Math.max(0, num(inputs.income));
+  const rate = result.currentCombinedRate;
+  const treatment = result.taxSavingsTreatment;
+
+  const rothContribution = first ? first.rothContribution : 0;
+  const tradContribution = first ? first.tradContribution : 0;
+
+  // Sheltering wages pre-tax is what creates the difference; a Roth deferral
+  // shelters nothing, so those wages stay taxable.
+  const taxableWages = {
+    trad: gross - tradContribution,
+    roth: gross - 0,
+  };
+  // Marginal rate is the right tool here: this is tax on the *difference* in
+  // taxable wages, not an average across all income.
+  const extraTax = {
+    trad: 0,
+    roth: (taxableWages.roth - taxableWages.trad) * rate,
+  };
+  const takeHomeCut = {
+    trad: tradContribution - tradContribution * rate,
+    roth: rothContribution,
+  };
+  const sideDeposit = {
+    trad: treatment === 'invest' ? rothContribution * rate : 0,
+    roth: 0,
+  };
+  const totalCost = {
+    trad: takeHomeCut.trad + sideDeposit.trad,
+    roth: takeHomeCut.roth + sideDeposit.roth,
+  };
+
+  const costGap = Math.abs(totalCost.roth - totalCost.trad);
+  const periodsPerYear = result.periodsPerYear;
+  /** @param {Record<string, number>} pair */
+  const perPeriodOf = (pair) => ({
+    trad: pair.trad / periodsPerYear,
+    roth: pair.roth / periodsPerYear,
+  });
+
+  return {
+    gross,
+    rate,
+    treatment,
+    periodsPerYear,
+    capped: first ? first.capped : false,
+    contribution: { trad: tradContribution, roth: rothContribution },
+    match: { trad: first ? first.tradMatch : 0, roth: first ? first.rothMatch : 0 },
+    taxableWages,
+    extraTax,
+    takeHomeCut,
+    sideDeposit,
+    totalCost,
+    costGap,
+    equalized: costGap < 0.01,
+    perPeriod: {
+      gross: gross / periodsPerYear,
+      contribution: perPeriodOf(contributionPair(tradContribution, rothContribution)),
+      extraTax: perPeriodOf(extraTax),
+      takeHomeCut: perPeriodOf(takeHomeCut),
+      sideDeposit: perPeriodOf(sideDeposit),
+      totalCost: perPeriodOf(totalCost),
+    },
+  };
+}
+
+/** @param {number} trad @param {number} roth */
+function contributionPair(trad, roth) {
+  return { trad, roth };
 }
 
 /**
