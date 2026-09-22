@@ -117,6 +117,31 @@ export function estimateRetirementMarginalRate(
 }
 
 /**
+ * The rate a pre-tax deduction is actually worth: the tax it removes, divided
+ * by its size.
+ *
+ * This is the right number for valuing a Traditional contribution, and it is
+ * not the same as a marginal rate. A deferral large enough to straddle a
+ * bracket boundary is worth a blend of the two rates, and one that reaches
+ * below the standard deduction is worth nothing at all.
+ *
+ * @param {number} wages gross wages before the deferral
+ * @param {number} deduction the pre-tax amount deferred
+ * @param {number} [standardDeduction]
+ * @returns {number}
+ */
+export function deductionRateOnSlice(
+  wages,
+  deduction,
+  standardDeduction = STANDARD_DEDUCTION_2026,
+) {
+  if (!Number.isFinite(deduction) || deduction <= 0) return 0;
+  const taxable = (w) => Math.max(0, w - standardDeduction);
+  const saved = federalTaxOwed(taxable(wages)) - federalTaxOwed(taxable(wages - deduction));
+  return Math.max(0, saved / deduction);
+}
+
+/**
  * Long-term capital gains rate implied by a gross income.
  * @param {number} grossIncome
  * @param {number} [deduction]

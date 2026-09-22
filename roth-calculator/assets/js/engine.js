@@ -1,5 +1,7 @@
 // @ts-check
-import { deferralLimitForAge, incrementalEffectiveRate, federalTaxOwed } from './tax.js';
+import {
+  deferralLimitForAge, incrementalEffectiveRate, federalTaxOwed, deductionRateOnSlice,
+} from './tax.js';
 import { DEFERRAL_LIMIT_2026, STANDARD_DEDUCTION_2026 } from './tax-data.js';
 
 /**
@@ -58,6 +60,19 @@ export const TAX_SAVINGS_TREATMENTS = Object.freeze([
   },
 ].map(Object.freeze));
 
+export const CURRENT_TAX_MODES = Object.freeze([
+  {
+    value: 'brackets',
+    label: 'Work it out from my income',
+    detail: 'Values the deduction at what the 2026 brackets actually refund on it. Keeps the rate honest, so it can only move when your income does.',
+  },
+  {
+    value: 'flat',
+    label: 'Use a rate I enter',
+    detail: 'Lets you type a rate. Entering one your income does not support will overstate the Traditional tax saving, and the tool will say so.',
+  },
+].map(Object.freeze));
+
 export const RETIREMENT_TAX_MODES = Object.freeze([
   {
     value: 'brackets',
@@ -93,6 +108,7 @@ export function defaultInputs() {
     rateOfReturn: 0.07,
     inflation: 0.025,
     payFrequency: 'monthly',
+    currentTaxMode: 'brackets',
     currentFederalRate: 0.22,
     currentStateRate: 0.05,
     retirementTaxMode: 'brackets',
@@ -143,7 +159,16 @@ export function project(inputs) {
     ? /** @type {'brackets'|'flat'} */ (inputs.retirementTaxMode)
     : 'brackets';
 
-  const currentRate = num(inputs.currentFederalRate) + num(inputs.currentStateRate);
+  const currentTaxMode = CURRENT_TAX_MODES.some((m) => m.value === inputs.currentTaxMode)
+    ? /** @type {'brackets'|'flat'} */ (inputs.currentTaxMode)
+    : 'brackets';
+  // Deriving this from income is what makes the comparison safe: a typed rate
+  // the income cannot support inflates the Traditional tax saving, which used
+  // to make a higher tax rate look like it left you wealthier.
+  const currentFederalRate = currentTaxMode === 'brackets'
+    ? deductionRateOnSlice(income, income * contributionPercent)
+    : num(inputs.currentFederalRate);
+  const currentRate = currentFederalRate + num(inputs.currentStateRate);
   const retirementStateRate = num(inputs.retirementStateRate);
   const withdrawalRate = Math.max(0, num(inputs.withdrawalRate, 0.04));
   const otherRetirementIncome = Math.max(0, num(inputs.otherRetirementIncome));
@@ -306,6 +331,8 @@ export function project(inputs) {
     totalContributions: totalRothContributions,
     totalTraditionalContributions: totalTradContributions,
     everCapped,
+    currentTaxMode,
+    currentFederalRate,
     currentCombinedRate: currentRate,
     // Kept for display: what the Traditional retiree actually pays.
     retirementCombinedRate: tradRetirementRate,

@@ -457,3 +457,16 @@ details > summary + * { margin-top: 0.85rem; }
 }
 .popover[data-placement="below"]::after { top: -5px; }
 .popover[data-placement="above"]::after { bottom: -5px; transform: rotate(225deg); }
+
+/* Today's take-home pay, sat under the retirement chart as the counterweight
+   to a Traditional stack that grows with the tax rate. */
+.takehome-strip {
+  display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.45rem;
+  margin-top: 0.7rem; padding: 0.55rem 0.7rem;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 5px;
+  font-size: 0.82rem;
+}
+.takehome-strip[hidden] { display: none; }
+.takehome-strip .strip-label { color: var(--text-muted); }
+.takehome-strip strong { font-family: var(--mono); font-size: 0.95rem; }
+.takehome-strip .strip-note { color: var(--text-muted); }

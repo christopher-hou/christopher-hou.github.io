@@ -307,12 +307,20 @@ function hintFor(key, result) {
       return inputs.otherRetirementIncome > 0
         ? 'Fills the low brackets first, taxing withdrawals higher'
         : 'Social Security, pension or similar (today\u2019s dollars)';
+    case 'currentTaxMode':
+      return result.currentTaxMode === 'brackets'
+        ? `Your deduction is worth ${formatPercent(result.currentFederalRate, 1)} federal`
+          + ` — ${formatPercent(result.currentCombinedRate, 1)} with state`
+        : '';
     case 'currentFederalRate':
       return bracketLabel(inputs.currentFederalRate);
     case 'retirementFederalRate':
       return bracketLabel(inputs.retirementFederalRate);
     case 'currentStateRate':
-      return `Combined rate today: ${formatPercent(result.currentCombinedRate, 1)}`;
+      return `Combined rate today: ${formatPercent(result.currentCombinedRate, 1)}`
+        + (result.currentTaxMode === 'brackets'
+          ? ` (${formatPercent(result.currentFederalRate, 1)} federal, worked out from your income)`
+          : '');
     case 'retirementStateRate':
       return result.retirementTaxMode === 'brackets'
         ? `Projected combined rate: ${formatPercent(result.traditional.retirementRate, 1)} on Traditional withdrawals`
@@ -509,6 +517,7 @@ function renderCharts(result) {
   $('chart-legend').innerHTML = legend.map(swatch).join('');
 
   $('chart-note').textContent = noteFor(result);
+  renderTakeHomeStrip(result);
 
   const deflate = (value, year) => (basis === 'real'
     ? value / Math.pow(1 + inputs.inflation, year)
@@ -540,6 +549,32 @@ function renderCharts(result) {
     { label: investing ? 'Traditional + match + side account' : 'Traditional + match', tone: 'trad' },
     { label: hasMatch ? 'Roth + match' : 'Roth', tone: 'roth' },
   ].map(swatch).join('');
+}
+
+/**
+ * The growing Traditional stack invites "more tax, more money". Showing
+ * today's take-home pay directly beneath it makes the other half of the
+ * picture impossible to miss.
+ * @param {ReturnType<typeof project>} result
+ */
+function renderTakeHomeStrip(result) {
+  const strip = $('takehome-strip');
+  if (!strip) return;
+  const b = paycheckBreakdown(inputs, result);
+
+  if (b.contribution.roth === 0 && b.gross === 0) { strip.hidden = true; return; }
+  strip.hidden = false;
+
+  const same = Math.abs(b.takeHome.trad - b.takeHome.roth) < 5;
+  strip.innerHTML = same
+    ? `<span class="strip-label">Take-home pay today</span>`
+      + `<strong>${formatCurrency(b.takeHome.roth)}</strong>`
+      + `<span class="strip-note">a year, the same either way \u2014 this is what tax actually `
+      + `costs you, and it falls as rates rise</span>`
+    : `<span class="strip-label">Take-home pay today</span>`
+      + `<strong>${formatCurrency(b.takeHome.trad)}</strong>`
+      + `<span class="strip-note">Traditional vs `
+      + `${formatCurrency(b.takeHome.roth)} Roth</span>`;
 }
 
 function noteFor(result) {

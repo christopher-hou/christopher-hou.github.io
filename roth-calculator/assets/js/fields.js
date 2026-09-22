@@ -1,5 +1,7 @@
 // @ts-check
-import { PAY_FREQUENCIES, TAX_SAVINGS_TREATMENTS, RETIREMENT_TAX_MODES } from './engine.js';
+import {
+  PAY_FREQUENCIES, TAX_SAVINGS_TREATMENTS, RETIREMENT_TAX_MODES, CURRENT_TAX_MODES,
+} from './engine.js';
 
 /**
  * @typedef {Object} Field
@@ -66,8 +68,17 @@ export const FIELDS = Object.freeze([
   },
 
   {
+    key: 'currentTaxMode', label: 'Tax rate today', kind: 'select',
+    options: CURRENT_TAX_MODES.map((m) => ({
+      value: m.value, label: m.label, detail: m.detail,
+    })),
+    group: 'taxes',
+    help: 'How your current tax rate is set. Working it out from your income values the deduction at what the brackets really refund, so the rate can only change when your income does.',
+  },
+  {
     key: 'currentFederalRate', label: 'Federal tax rate now', kind: 'percent',
     min: 0, max: 50, step: 1, group: 'taxes', estimator: true,
+    visibleWhen: (i) => i.currentTaxMode === 'flat',
     help: 'Your marginal federal rate today — the rate on your next dollar of income. Use Estimate to derive it from the 2026 single-filer brackets.',
   },
   {
