@@ -135,6 +135,13 @@ hr {
     background-repeat: no-repeat;
 }
 
+.project-item.rothcalculator {
+    background-image: url('../images/roth-calculator.svg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
 .project-item.calendar {
     background-image: url('../images/calendar.png');
     background-size: cover;

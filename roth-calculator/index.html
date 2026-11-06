@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Roth vs Traditional 401(k) Calculator</title>
+  <meta name="description"
+    content="Compare a Roth and a Traditional 401(k) with federal and state tax rates, inflation, and wage growth.">
+  <script>
+    // Applied before first paint so the page never flashes the wrong theme.
+    (function () {
+      try {
+        // Falls back to the 'theme' key so the calculator matches the
+        // surrounding site's light/dark choice when embedded in it.
+        var saved = localStorage.getItem('roth-calc-theme') || localStorage.getItem('theme');
+        var dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.setAttribute('data-theme', saved || (dark ? 'dark' : 'light'));
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
+  <!-- Self-contained: an ../ fallback would resolve only inside this site. -->
+  <link rel="icon" type="image/svg+xml" href="assets/images/favicon.svg">
+  <link rel="stylesheet" href="assets/css/calculator.css">
+</head>
+
+<body>
+  <a class="skip-link" href="#results">Skip to results</a>
+
+  <header class="page-header">
+    <div class="page-header-inner">
+      <div>
+        <a class="back-link" href="../index.html">&larr; Christopher Hou</a>
+        <h1>Roth vs Traditional 401(k)</h1>
+        <p class="tagline">Which one leaves you with more money after taxes?</p>
+      </div>
+      <div class="header-actions">
+        <button type="button" id="theme-toggle" class="btn btn-quiet" aria-pressed="false">
+          <span id="theme-toggle-label">Dark</span>
+        </button>
+        <button type="button" id="reset" class="btn btn-quiet">Reset</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <form class="panel inputs" id="inputs" novalidate>
+      <fieldset>
+        <legend>401(k) and your paycheck</legend>
+        <div class="field-list" data-group="basics"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Tax rates and inflation</legend>
+        <div class="field-list" data-group="taxes"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>
+          Assumptions
+          <span class="legend-note">How the comparison is kept fair</span>
+        </legend>
+        <div class="field-list" data-group="assumptions"></div>
+      </fieldset>
+    </form>
+
+    <section class="results" id="results">
+      <div class="panel verdict" id="verdict" aria-live="polite" aria-atomic="true">
+        <p class="verdict-eyebrow" id="verdict-eyebrow">Recommendation</p>
+        <h2 class="verdict-headline" id="verdict-headline"></h2>
+        <p class="verdict-detail" id="verdict-detail"></p>
+        <div class="verdict-breakeven" id="verdict-breakeven"></div>
+        <p class="notice" id="verdict-warning" hidden></p>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Balances at retirement</h2>
+          <div class="dollar-toggle" role="group" aria-label="Dollar basis">
+            <button type="button" class="seg is-active" data-basis="nominal" aria-pressed="true">Future dollars</button>
+            <button type="button" class="seg" data-basis="real" aria-pressed="false">Today&rsquo;s dollars</button>
+          </div>
+        </div>
+        <div class="legend" id="chart-legend"></div>
+        <div class="chart-wrap" id="bar-chart"></div>
+        <p class="takehome-strip" id="takehome-strip" hidden></p>
+        <p class="notice" id="econ-warning" hidden></p>
+        <p class="chart-note" id="chart-note"></p>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>What it does to your paycheck</h2>
+          <div class="dollar-toggle" role="group" aria-label="Period">
+            <button type="button" class="seg period-seg is-active" data-period="year"
+              aria-pressed="true">Per year</button>
+            <button type="button" class="seg period-seg" data-period="period"
+              aria-pressed="false">Per paycheck</button>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="compare" id="paycheck-table"></table>
+        </div>
+        <p class="notice" id="rate-warning" hidden></p>
+        <p class="chart-note" id="paycheck-note"></p>
+      </div>
+
+      <details class="panel fairness-panel">
+        <summary><h2>Why is there a &ldquo;side account&rdquo;?</h2></summary>
+        <div id="fairness"></div>
+      </details>
+
+      <div class="panel">
+        <h2>Side-by-side</h2>
+        <div class="table-scroll">
+          <table class="compare" id="compare-table"></table>
+        </div>
+        <p class="chart-note" id="compare-note"></p>
+      </div>
+
+      <div class="panel">
+        <h2>Balance over time</h2>
+        <div class="legend" id="line-legend"></div>
+        <div class="chart-wrap" id="line-chart"></div>
+      </div>
+
+      <details class="panel">
+        <summary><h2>Year-by-year schedule</h2></summary>
+        <div class="table-scroll">
+          <table class="schedule" id="schedule-table"></table>
+        </div>
+      </details>
+
+      <div class="panel share">
+        <h2>Share this scenario</h2>
+        <p class="muted">Your inputs are saved in the page address, so you can bookmark or send it.</p>
+        <button type="button" class="btn" id="copy-link">Copy link</button>
+        <span class="copy-status" id="copy-status" role="status"></span>
+      </div>
+
+      <div class="panel caveats">
+        <h2>What this does not model</h2>
+        <ul id="caveat-list"></ul>
+        <p class="disclaimer">
+          This is an educational projection, not financial advice. Every figure
+          depends on assumptions that will not hold exactly. Talk to a
+          qualified advisor before acting on it.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="page-footer">
+    <nav class="site-nav" aria-label="Back to the main site">
+      <a href="../index.html">Home</a>
+      <a href="../pages/about.html">About</a>
+      <a href="../pages/projects.html">Projects</a>
+    </nav>
+    <p>
+      Federal brackets, the standard deduction and contribution limits are 2026
+      figures for a single filer.
+    </p>
+  </footer>
+
+  <template id="field-row">
+    <div class="field">
+      <div class="field-main">
+        <label class="field-label"></label>
+        <div class="field-controls">
+          <input type="text" class="field-number" inputmode="decimal" autocomplete="off">
+          <button type="button" class="btn btn-tiny field-estimate" hidden>Estimate</button>
+          <button type="button" class="help-toggle" aria-expanded="false">
+            <span aria-hidden="true">?</span>
+          </button>
+        </div>
+      </div>
+      <input type="range" class="field-range">
+      <div class="field-bounds"><span class="bound-min"></span><span class="bound-max"></span></div>
+      <p class="field-hint"></p>
+      <p class="field-help sr-only"></p>
+    </div>
+  </template>
+
+  <div class="popover" id="help-popover" role="dialog" aria-modal="false" hidden>
+    <button type="button" class="popover-close" id="help-popover-close" aria-label="Close">
+      <span aria-hidden="true">&times;</span>
+    </button>
+    <p class="popover-title" id="help-popover-title"></p>
+    <p class="popover-body" id="help-popover-body"></p>
+  </div>
+
+  <script type="module" src="assets/js/app.js"></script>
+</body>
+
+</html>
